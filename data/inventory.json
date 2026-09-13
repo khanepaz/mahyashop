@@ -1,18 +1,10 @@
 [
   {
-    "productId": "P26090805265871",
-    "productName": "خودم تو جلسه",
-    "stock": 0,
-    "active": true,
-    "updatedAt": "2026-09-13T09:02:47.393Z",
-    "variants": []
-  },
-  {
     "productId": "P26090807525753",
     "productName": "خودم آبی",
     "stock": 0,
     "active": true,
-    "updatedAt": "2026-09-13T09:02:47.393Z",
+    "updatedAt": "2026-09-13T09:03:05.118Z",
     "variants": []
   },
   {
@@ -20,7 +12,7 @@
     "productName": "من",
     "stock": 0,
     "active": true,
-    "updatedAt": "2026-09-13T09:02:47.393Z",
+    "updatedAt": "2026-09-13T09:03:05.118Z",
     "variants": []
   },
   {
@@ -28,7 +20,7 @@
     "productName": "من زیبا",
     "stock": 5,
     "active": true,
-    "updatedAt": "2026-09-13T09:02:47.393Z",
+    "updatedAt": "2026-09-13T09:03:05.118Z",
     "variants": [
       {
         "variantId": "V_mtttqplb_qo1l0n",
@@ -42,7 +34,7 @@
     "productName": "زیبا",
     "stock": 2,
     "active": true,
-    "updatedAt": "2026-09-13T09:02:47.393Z",
+    "updatedAt": "2026-09-13T09:03:05.118Z",
     "variants": []
   }
 ]
