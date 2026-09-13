@@ -1,5 +1,7 @@
 const API_URL = "https://hamedtest1.netlify.app/.netlify/functions/api";
 const TOKEN_KEY = "mahyashop_admin_token";
+const ADMIN_JSON = "data/admin.json";
+const SESSION_FLAG = "mahyashop_admin_ok";
 
 const STATUS_LABELS = {
   pending: "در انتظار",
@@ -73,11 +75,13 @@ function showApp(show) {
 function closeSidebar() {
   document.getElementById("adminSidebar").classList.remove("open");
   document.getElementById("sidebarBackdrop").classList.remove("show");
+  document.body.classList.remove("menu-open");
 }
 
 function openSidebar() {
   document.getElementById("adminSidebar").classList.add("open");
   document.getElementById("sidebarBackdrop").classList.add("show");
+  document.body.classList.add("menu-open");
 }
 
 const PAGE_META = {
@@ -146,6 +150,9 @@ async function loadAll() {
     map[key].total += Number(o.total) || 0;
   });
   cache.customers = Object.values(map);
+  if (!cache.products.length || !cache.categories.length) {
+    try { await loadLocalFallback(); } catch (e) { console.warn(e); }
+  }
 }
 
 function renderDashboard() {
@@ -311,20 +318,15 @@ function fillCategorySelect(selected) {
 
 function openProductEditor(id) {
   const p = id ? cache.products.find(function (x) { return x.id === id; }) : null;
-  document.getElementById("productModalTitle").textContent = p
-    ? "ویرایش محصول"
-    : "محصول جدید";
+  document.getElementById("productModalTitle").textContent = p ? "ویرایش محصول" : "محصول جدید";
   document.getElementById("pId").value = p ? p.id : "";
   document.getElementById("pName").value = p ? p.name || "" : "";
   document.getElementById("pDesc").value = p ? p.description || "" : "";
-  document.getElementById("pCompare").value =
-    p ? p.compareAtPrice || p.price || 0 : "";
+  document.getElementById("pCompare").value = p ? p.compareAtPrice || p.price || 0 : "";
   document.getElementById("pDiscType").value = (p && p.discountType) || "none";
   document.getElementById("pDiscVal").value = (p && p.discountValue) || 0;
-  document.getElementById("pStock").value =
-    p ? p.totalStock != null ? p.totalStock : p.stock || 0 : 0;
-  document.getElementById("pImage").value =
-    p ? p.image || (p.images && p.images[0]) || "" : "";
+  document.getElementById("pStock").value = p ? (p.totalStock != null ? p.totalStock : p.stock || 0) : 0;
+  document.getElementById("pImage").value = p ? p.image || (p.images && p.images[0]) || "" : "";
   document.getElementById("pTags").value = p && p.tags ? p.tags.join(", ") : "";
   document.getElementById("pActive").checked = !p || p.active !== false;
   document.getElementById("pFeatured").checked = !!(p && p.featured);
@@ -336,15 +338,9 @@ async function saveProduct(e) {
   e.preventDefault();
   const id = document.getElementById("pId").value;
   const catId = document.getElementById("pCategory").value;
-  const cat = cache.categories.find(function (c) {
-    return String(c.id) === String(catId);
-  });
+  const cat = cache.categories.find(function (c) { return String(c.id) === String(catId); });
   const tagsRaw = document.getElementById("pTags").value.trim();
-  const tags = tagsRaw
-    ? tagsRaw.split(",").map(function (t) {
-        return t.trim();
-      }).filter(Boolean)
-    : [];
+  const tags = tagsRaw ? tagsRaw.split(",").map(function (t) { return t.trim(); }).filter(Boolean) : [];
   const image = document.getElementById("pImage").value.trim();
   const payload = {
     name: document.getElementById("pName").value.trim(),
@@ -365,11 +361,8 @@ async function saveProduct(e) {
   const btn = document.getElementById("productSaveBtn");
   btn.disabled = true;
   try {
-    if (id) {
-      await api("products.update", { id: id, changes: payload });
-    } else {
-      await api("products.create", { product: payload });
-    }
+    if (id) await api("products.update", { id: id, changes: payload });
+    else await api("products.create", { product: payload });
     productModal.hide();
     toast("ذخیره شد", "ok");
     await loadAll();
@@ -383,36 +376,19 @@ async function saveProduct(e) {
 
 function renderCategories() {
   if (!cache.categories.length) {
-    document.getElementById("categoriesTableWrap").innerHTML =
-      '<div class="empty-hint">دسته‌ای تعریف نشده</div>';
+    document.getElementById("categoriesTableWrap").innerHTML = '<div class="empty-hint">دسته‌ای تعریف نشده</div>';
     return;
   }
   document.getElementById("categoriesTableWrap").innerHTML =
     '<table class="table table-adm table-hover mb-0"><thead><tr><th>آیکون</th><th>نام</th><th>وضعیت</th><th></th></tr></thead><tbody>' +
-    cache.categories
-      .map(function (c) {
-        return (
-          "<tr><td class=\"fs-4\">" +
-          escapeHtml(c.icon || "📦") +
-          "</td><td>" +
-          escapeHtml(c.name) +
-          "</td><td>" +
-          (c.active !== false
-            ? '<span class="badge-soft badge-on">فعال</span>'
-            : '<span class="badge-soft badge-off">غیرفعال</span>') +
-          '</td><td><button type="button" class="btn btn-sm btn-outline-primary me-1" data-cedit="' +
-          escapeHtml(c.id) +
-          '">ویرایش</button><button type="button" class="btn btn-sm btn-outline-danger" data-cdel="' +
-          escapeHtml(c.id) +
-          '">حذف</button></td></tr>'
-        );
-      })
-      .join("") +
-    "</tbody></table>";
+    cache.categories.map(function (c) {
+      return "<tr><td class=\"fs-4\">" + escapeHtml(c.icon || "📦") + "</td><td>" + escapeHtml(c.name) +
+        "</td><td>" + (c.active !== false ? '<span class="badge-soft badge-on">فعال</span>' : '<span class="badge-soft badge-off">غیرفعال</span>') +
+        '</td><td><button type="button" class="btn btn-sm btn-outline-primary me-1" data-cedit="' + escapeHtml(c.id) +
+        '">ویرایش</button><button type="button" class="btn btn-sm btn-outline-danger" data-cdel="' + escapeHtml(c.id) + '">حذف</button></td></tr>';
+    }).join("") + "</tbody></table>";
   document.querySelectorAll("[data-cedit]").forEach(function (b) {
-    b.onclick = function () {
-      openCategoryEditor(b.dataset.cedit);
-    };
+    b.onclick = function () { openCategoryEditor(b.dataset.cedit); };
   });
   document.querySelectorAll("[data-cdel]").forEach(function (b) {
     b.onclick = async function () {
@@ -422,9 +398,7 @@ function renderCategories() {
         toast("حذف شد", "ok");
         await loadAll();
         renderCategories();
-      } catch (e) {
-        toast(e.message, "err");
-      }
+      } catch (e) { toast(e.message, "err"); }
     };
   });
 }
@@ -453,87 +427,52 @@ async function saveCategory(e) {
     toast("ذخیره شد", "ok");
     await loadAll();
     renderCategories();
-  } catch (err) {
-    toast(err.message, "err");
-  }
+  } catch (err) { toast(err.message, "err"); }
 }
 
 function renderBanners() {
-  const list = cache.banners.slice().sort(function (a, b) {
-    return (a.order || 0) - (b.order || 0);
-  });
+  const list = cache.banners.slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
   if (!list.length) {
-    document.getElementById("bannersTableWrap").innerHTML =
-      '<div class="empty-hint">بنری نیست — بنر جدید اضافه کنید</div>';
+    document.getElementById("bannersTableWrap").innerHTML = '<div class="empty-hint">بنری نیست — بنر جدید اضافه کنید</div>';
     return;
   }
   document.getElementById("bannersTableWrap").innerHTML =
     '<table class="table table-adm table-hover mb-0"><thead><tr><th>ترتیب</th><th>عنوان</th><th>عکس</th><th>وضعیت</th><th></th></tr></thead><tbody>' +
-    list
-      .map(function (b, idx) {
-        return (
-          "<tr><td>" +
-          (b.order || idx + 1) +
-          "</td><td><div class=\"fw-semibold\">" +
-          escapeHtml(b.title) +
-          '</div><div class="small text-muted">' +
-          escapeHtml(b.subtitle || "") +
-          "</div></td><td>" +
-          (b.image
-            ? '<img class="thumb" src="' + escapeHtml(b.image) + '" alt="" />'
-            : '<span class="small text-muted">بدون عکس</span>') +
-          "</td><td>" +
-          (b.active !== false
-            ? '<span class="badge-soft badge-on">فعال</span>'
-            : '<span class="badge-soft badge-off">غیرفعال</span>') +
-          '</td><td><button type="button" class="btn btn-sm btn-outline-primary me-1" data-bedit="' +
-          idx +
-          '">ویرایش</button><button type="button" class="btn btn-sm btn-outline-danger" data-bdel="' +
-          idx +
-          '">حذف</button></td></tr>'
-        );
-      })
-      .join("") +
-    "</tbody></table>";
-
+    list.map(function (b, idx) {
+      return "<tr><td>" + (b.order || idx + 1) + "</td><td><div class=\"fw-semibold\">" + escapeHtml(b.title) +
+        '</div><div class="small text-muted">' + escapeHtml(b.subtitle || "") + "</div></td><td>" +
+        (b.image ? '<img class="thumb" src="' + escapeHtml(b.image) + '" alt="" />' : '<span class="small text-muted">بدون عکس</span>') +
+        "</td><td>" + (b.active !== false ? '<span class="badge-soft badge-on">فعال</span>' : '<span class="badge-soft badge-off">غیرفعال</span>') +
+        '</td><td><button type="button" class="btn btn-sm btn-outline-primary me-1" data-bedit="' + idx +
+        '">ویرایش</button><button type="button" class="btn btn-sm btn-outline-danger" data-bdel="' + idx + '">حذف</button></td></tr>';
+    }).join("") + "</tbody></table>";
   document.querySelectorAll("[data-bedit]").forEach(function (btn) {
-    btn.onclick = function () {
-      openBannerEditor(Number(btn.dataset.bedit));
-    };
+    btn.onclick = function () { openBannerEditor(Number(btn.dataset.bedit)); };
   });
   document.querySelectorAll("[data-bdel]").forEach(function (btn) {
     btn.onclick = async function () {
       if (!confirm("حذف این بنر؟")) return;
-      const sorted = cache.banners.slice().sort(function (a, b) {
-        return (a.order || 0) - (b.order || 0);
-      });
+      const sorted = cache.banners.slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
       sorted.splice(Number(btn.dataset.bdel), 1);
       try {
         await api("banners.save", { banners: sorted });
         toast("حذف شد", "ok");
         await loadAll();
         renderBanners();
-      } catch (e) {
-        toast(e.message, "err");
-      }
+      } catch (e) { toast(e.message, "err"); }
     };
   });
 }
 
 function openBannerEditor(index) {
   editingBannerIndex = index;
-  const sorted = cache.banners.slice().sort(function (a, b) {
-    return (a.order || 0) - (b.order || 0);
-  });
+  const sorted = cache.banners.slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
   const b = index >= 0 ? sorted[index] : null;
   document.getElementById("bId").value = b ? b.id || "" : "";
   document.getElementById("bTitle").value = b ? b.title || "" : "";
   document.getElementById("bSubtitle").value = b ? b.subtitle || "" : "";
   document.getElementById("bImage").value = b ? b.image || "" : "";
-  document.getElementById("bGradient").value =
-    b && b.gradient
-      ? b.gradient
-      : "linear-gradient(120deg, rgba(15,20,40,.92), rgba(15,52,96,.85))";
+  document.getElementById("bGradient").value = b && b.gradient ? b.gradient : "linear-gradient(120deg, rgba(15,20,40,.92), rgba(15,52,96,.85))";
   document.getElementById("bLink").value = b ? b.link || "" : "#productsSection";
   document.getElementById("bButtonText").value = b ? b.buttonText || "" : "مشاهده";
   document.getElementById("bOrder").value = b ? b.order || 1 : sorted.length + 1;
@@ -543,13 +482,9 @@ function openBannerEditor(index) {
 
 async function saveBanner(e) {
   e.preventDefault();
-  const sorted = cache.banners.slice().sort(function (a, b) {
-    return (a.order || 0) - (b.order || 0);
-  });
+  const sorted = cache.banners.slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
   const item = {
-    id:
-      document.getElementById("bId").value ||
-      "bn_" + Date.now().toString(36),
+    id: document.getElementById("bId").value || "bn_" + Date.now().toString(36),
     title: document.getElementById("bTitle").value.trim(),
     subtitle: document.getElementById("bSubtitle").value.trim(),
     image: document.getElementById("bImage").value.trim(),
@@ -559,20 +494,15 @@ async function saveBanner(e) {
     order: Number(document.getElementById("bOrder").value) || 1,
     active: document.getElementById("bActive").checked
   };
-  if (editingBannerIndex >= 0 && editingBannerIndex < sorted.length) {
-    sorted[editingBannerIndex] = item;
-  } else {
-    sorted.push(item);
-  }
+  if (editingBannerIndex >= 0 && editingBannerIndex < sorted.length) sorted[editingBannerIndex] = item;
+  else sorted.push(item);
   try {
     await api("banners.save", { banners: sorted });
     bannerModal.hide();
     toast("بنر ذخیره شد", "ok");
     await loadAll();
     renderBanners();
-  } catch (err) {
-    toast(err.message, "err");
-  }
+  } catch (err) { toast(err.message, "err"); }
 }
 
 function renderOrders() {
@@ -582,106 +512,47 @@ function renderOrders() {
   if (sf !== "all") list = list.filter(function (o) { return o.status === sf; });
   if (pf === "paid") list = list.filter(function (o) { return o.paymentStatus === "paid"; });
   if (pf === "unpaid") list = list.filter(function (o) { return o.paymentStatus !== "paid"; });
-
   if (!list.length) {
-    document.getElementById("ordersTableWrap").innerHTML =
-      '<div class="empty-hint">سفارشی با این فیلتر نیست</div>';
+    document.getElementById("ordersTableWrap").innerHTML = '<div class="empty-hint">سفارشی با این فیلتر نیست</div>';
     return;
   }
-
   document.getElementById("ordersTableWrap").innerHTML =
     '<table class="table table-adm table-hover"><thead><tr><th>کد</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th><th>پرداخت</th><th></th></tr></thead><tbody>' +
-    list
-      .map(function (o) {
-        return (
-          "<tr><td class=\"small\">" +
-          escapeHtml(o.id) +
-          "</td><td>" +
-          escapeHtml((o.customer && o.customer.name) || "—") +
-          '<div class="small text-muted">' +
-          escapeHtml((o.customer && o.customer.phone) || "") +
-          "</div></td><td>" +
-          money(o.total) +
-          "</td><td>" +
-          escapeHtml(STATUS_LABELS[o.status] || o.status) +
-          "</td><td>" +
-          (o.paymentStatus === "paid"
-            ? '<span class="badge-soft badge-paid">شده</span>'
-            : '<span class="badge-soft badge-unpaid">نشده</span>') +
-          '</td><td><button type="button" class="btn btn-sm btn-outline-primary" data-oid="' +
-          escapeHtml(o.id) +
-          '">جزئیات</button></td></tr>'
-        );
-      })
-      .join("") +
-    "</tbody></table>";
-
+    list.map(function (o) {
+      return "<tr><td class=\"small\">" + escapeHtml(o.id) + "</td><td>" + escapeHtml((o.customer && o.customer.name) || "—") +
+        '<div class="small text-muted">' + escapeHtml((o.customer && o.customer.phone) || "") + "</div></td><td>" + money(o.total) +
+        "</td><td>" + escapeHtml(STATUS_LABELS[o.status] || o.status) + "</td><td>" +
+        (o.paymentStatus === "paid" ? '<span class="badge-soft badge-paid">شده</span>' : '<span class="badge-soft badge-unpaid">نشده</span>') +
+        '</td><td><button type="button" class="btn btn-sm btn-outline-primary" data-oid="' + escapeHtml(o.id) + '">جزئیات</button></td></tr>';
+    }).join("") + "</tbody></table>";
   document.querySelectorAll("[data-oid]").forEach(function (b) {
-    b.onclick = function () {
-      openOrder(b.dataset.oid);
-    };
+    b.onclick = function () { openOrder(b.dataset.oid); };
   });
 }
 
 function openOrder(id) {
-  const o = cache.orders.find(function (x) {
-    return x.id === id;
-  });
+  const o = cache.orders.find(function (x) { return x.id === id; });
   if (!o) return;
   const c = o.customer || {};
-  const items = (o.items || [])
-    .map(function (i) {
-      return (
-        "<li>" +
-        escapeHtml(i.name) +
-        (i.variantName ? " (" + escapeHtml(i.variantName) + ")" : "") +
-        " × " +
-        i.quantity +
-        " = " +
-        money(i.total) +
-        "</li>"
-      );
-    })
-    .join("");
+  const items = (o.items || []).map(function (i) {
+    return "<li>" + escapeHtml(i.name) + (i.variantName ? " (" + escapeHtml(i.variantName) + ")" : "") +
+      " × " + i.quantity + " = " + money(i.total) + "</li>";
+  }).join("");
   document.getElementById("orderDetailBody").innerHTML =
-    '<div class="mb-2"><strong>کد:</strong> ' +
-    escapeHtml(o.id) +
-    "</div>" +
-    "<div class=\"mb-2\"><strong>وضعیت:</strong> " +
-    escapeHtml(STATUS_LABELS[o.status] || o.status) +
-    " · <strong>پرداخت:</strong> " +
-    (o.paymentStatus === "paid" ? "شده" : "نشده") +
-    "</div>" +
-    "<div class=\"mb-2\"><strong>مبلغ:</strong> " +
-    money(o.total) +
-    "</div>" +
-    "<div class=\"mb-2\"><strong>مشتری:</strong> " +
-    escapeHtml(c.name || "—") +
-    " / " +
-    escapeHtml(c.phone || "—") +
-    "<br/>" +
-    escapeHtml(c.address || "") +
-    "</div>" +
+    '<div class="mb-2"><strong>کد:</strong> ' + escapeHtml(o.id) + "</div>" +
+    "<div class=\"mb-2\"><strong>وضعیت:</strong> " + escapeHtml(STATUS_LABELS[o.status] || o.status) +
+    " · <strong>پرداخت:</strong> " + (o.paymentStatus === "paid" ? "شده" : "نشده") + "</div>" +
+    "<div class=\"mb-2\"><strong>مبلغ:</strong> " + money(o.total) + "</div>" +
+    "<div class=\"mb-2\"><strong>مشتری:</strong> " + escapeHtml(c.name || "—") + " / " + escapeHtml(c.phone || "—") +
+    "<br/>" + escapeHtml(c.address || "") + "</div>" +
     (o.note ? "<div class=\"mb-2\"><strong>توضیح:</strong> " + escapeHtml(o.note) + "</div>" : "") +
-    "<ul class=\"mb-0\">" +
-    items +
-    "</ul>";
-
+    "<ul class=\"mb-0\">" + items + "</ul>";
   const statuses = ["confirmed", "packing", "shipped", "delivered", "cancelled", "returned"];
   document.getElementById("orderStatusBtns").innerHTML =
-    statuses
-      .map(function (s) {
-        return (
-          '<button type="button" class="btn btn-sm btn-outline-secondary" data-st="' +
-          s +
-          '">' +
-          (STATUS_LABELS[s] || s) +
-          "</button>"
-        );
-      })
-      .join("") +
+    statuses.map(function (s) {
+      return '<button type="button" class="btn btn-sm btn-outline-secondary" data-st="' + s + '">' + (STATUS_LABELS[s] || s) + "</button>";
+    }).join("") +
     '<button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">بستن</button>';
-
   document.querySelectorAll("#orderStatusBtns [data-st]").forEach(function (btn) {
     btn.onclick = async function () {
       try {
@@ -690,9 +561,7 @@ function openOrder(id) {
         await loadAll();
         orderModal.hide();
         renderOrders();
-      } catch (e) {
-        toast(e.message, "err");
-      }
+      } catch (e) { toast(e.message, "err"); }
     };
   });
   orderModal.show();
@@ -700,39 +569,20 @@ function openOrder(id) {
 
 function renderDiscounts() {
   if (!cache.discounts.length) {
-    document.getElementById("discountsTableWrap").innerHTML =
-      '<div class="empty-hint">کد تخفیفی نیست</div>';
+    document.getElementById("discountsTableWrap").innerHTML = '<div class="empty-hint">کد تخفیفی نیست</div>';
     return;
   }
   document.getElementById("discountsTableWrap").innerHTML =
     '<table class="table table-adm table-hover mb-0"><thead><tr><th>کد</th><th>نوع</th><th>مقدار</th><th>وضعیت</th><th></th></tr></thead><tbody>' +
-    cache.discounts
-      .map(function (d) {
-        return (
-          "<tr><td><code>" +
-          escapeHtml(d.code) +
-          "</code></td><td>" +
-          (d.type === "amount" ? "مبلغی" : "درصدی") +
-          "</td><td>" +
-          (d.type === "amount" ? money(d.value) : d.value + "٪") +
-          "</td><td>" +
-          (d.active !== false
-            ? '<span class="badge-soft badge-on">فعال</span>'
-            : '<span class="badge-soft badge-off">غیرفعال</span>') +
-          '</td><td><button type="button" class="btn btn-sm btn-outline-primary me-1" data-dedit="' +
-          escapeHtml(d.id || d.code) +
-          '">ویرایش</button><button type="button" class="btn btn-sm btn-outline-danger" data-ddel="' +
-          escapeHtml(d.id || d.code) +
-          '">حذف</button></td></tr>'
-        );
-      })
-      .join("") +
-    "</tbody></table>";
-
+    cache.discounts.map(function (d) {
+      return "<tr><td><code>" + escapeHtml(d.code) + "</code></td><td>" + (d.type === "amount" ? "مبلغی" : "درصدی") +
+        "</td><td>" + (d.type === "amount" ? money(d.value) : d.value + "٪") + "</td><td>" +
+        (d.active !== false ? '<span class="badge-soft badge-on">فعال</span>' : '<span class="badge-soft badge-off">غیرفعال</span>') +
+        '</td><td><button type="button" class="btn btn-sm btn-outline-primary me-1" data-dedit="' + escapeHtml(d.id || d.code) +
+        '">ویرایش</button><button type="button" class="btn btn-sm btn-outline-danger" data-ddel="' + escapeHtml(d.id || d.code) + '">حذف</button></td></tr>';
+    }).join("") + "</tbody></table>";
   document.querySelectorAll("[data-dedit]").forEach(function (b) {
-    b.onclick = function () {
-      openDiscountEditor(b.dataset.dedit);
-    };
+    b.onclick = function () { openDiscountEditor(b.dataset.dedit); };
   });
   document.querySelectorAll("[data-ddel]").forEach(function (b) {
     b.onclick = async function () {
@@ -742,19 +592,13 @@ function renderDiscounts() {
         toast("حذف شد", "ok");
         await loadAll();
         renderDiscounts();
-      } catch (e) {
-        toast(e.message, "err");
-      }
+      } catch (e) { toast(e.message, "err"); }
     };
   });
 }
 
 function openDiscountEditor(id) {
-  const d = id
-    ? cache.discounts.find(function (x) {
-        return String(x.id) === String(id) || x.code === id;
-      })
-    : null;
+  const d = id ? cache.discounts.find(function (x) { return String(x.id) === String(id) || x.code === id; }) : null;
   document.getElementById("dId").value = d ? d.id || d.code : "";
   document.getElementById("dCode").value = d ? d.code : "";
   document.getElementById("dType").value = d ? d.type || "percent" : "percent";
@@ -779,35 +623,19 @@ async function saveDiscount(e) {
     toast("ذخیره شد", "ok");
     await loadAll();
     renderDiscounts();
-  } catch (err) {
-    toast(err.message, "err");
-  }
+  } catch (err) { toast(err.message, "err"); }
 }
 
 function renderCustomers() {
   if (!cache.customers.length) {
-    document.getElementById("customersTableWrap").innerHTML =
-      '<div class="empty-hint">هنوز مشتری از سفارش استخراج نشده</div>';
+    document.getElementById("customersTableWrap").innerHTML = '<div class="empty-hint">هنوز مشتری از سفارش استخراج نشده</div>';
     return;
   }
   document.getElementById("customersTableWrap").innerHTML =
     '<table class="table table-adm table-hover mb-0"><thead><tr><th>نام</th><th>موبایل</th><th>تعداد سفارش</th><th>جمع خرید</th></tr></thead><tbody>' +
-    cache.customers
-      .map(function (c) {
-        return (
-          "<tr><td>" +
-          escapeHtml(c.name) +
-          "</td><td>" +
-          escapeHtml(c.phone) +
-          "</td><td>" +
-          c.orders +
-          "</td><td>" +
-          money(c.total) +
-          "</td></tr>"
-        );
-      })
-      .join("") +
-    "</tbody></table>";
+    cache.customers.map(function (c) {
+      return "<tr><td>" + escapeHtml(c.name) + "</td><td>" + escapeHtml(c.phone) + "</td><td>" + c.orders + "</td><td>" + money(c.total) + "</td></tr>";
+    }).join("") + "</tbody></table>";
 }
 
 function fillSettings() {
@@ -826,31 +654,61 @@ async function saveSettings(e) {
         shopName: document.getElementById("setShopName").value.trim(),
         currency: document.getElementById("setCurrency").value.trim() || "IRR",
         shippingCost: Number(document.getElementById("setShipping").value) || 0,
-        freeShippingThreshold:
-          Number(document.getElementById("setFreeShip").value) || 0
+        freeShippingThreshold: Number(document.getElementById("setFreeShip").value) || 0
       }
     });
     toast("تنظیمات ذخیره شد", "ok");
     await loadAll();
-  } catch (err) {
-    toast(err.message, "err");
+  } catch (err) { toast(err.message, "err"); }
+}
+
+async function fetchAdminConfig() {
+  try {
+    var res = await fetch(ADMIN_JSON, { cache: "no-store" });
+    if (!res.ok) throw new Error("فایل ادمین پیدا نشد");
+    return await res.json();
+  } catch (e) {
+    try {
+      var res2 = await fetch("./data/admin.json", { cache: "no-store" });
+      if (!res2.ok) throw e;
+      return await res2.json();
+    } catch (e2) {
+      throw new Error("نتوانستم فایل رمز ادمین را بخوانم (data/admin.json)");
+    }
   }
 }
 
+async function loadLocalFallback() {
+  async function j(path, fb) {
+    try {
+      var r = await fetch(path, { cache: "no-store" });
+      if (!r.ok) return fb;
+      return await r.json();
+    } catch (e) { return fb; }
+  }
+  cache.products = await j("data/products.json", cache.products || []);
+  cache.categories = await j("data/categories.json", cache.categories || []);
+  cache.orders = await j("data/orders.json", cache.orders || []);
+  cache.banners = await j("data/banners.json", cache.banners || []);
+  cache.discounts = await j("data/discounts.json", cache.discounts || []);
+  cache.settings = await j("data/settings.json", cache.settings || {});
+  if (!Array.isArray(cache.products)) cache.products = [];
+  if (!Array.isArray(cache.categories)) cache.categories = [];
+  if (!Array.isArray(cache.orders)) cache.orders = [];
+  if (!Array.isArray(cache.banners)) cache.banners = [];
+  if (!Array.isArray(cache.discounts)) cache.discounts = [];
+}
+
 async function tryAutoLogin() {
-  if (!token) {
+  var ok = localStorage.getItem(SESSION_FLAG) === "1";
+  if (!ok && !token) {
     showApp(false);
     return;
   }
-  try {
-    await loadAll();
-    showApp(true);
-    goSection("dashboard");
-  } catch (e) {
-    token = "";
-    localStorage.removeItem(TOKEN_KEY);
-    showApp(false);
-  }
+  try { await loadAll(); } catch (e) { console.warn(e); }
+  try { await loadLocalFallback(); } catch (e2) { console.warn(e2); }
+  showApp(true);
+  goSection("dashboard");
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -865,14 +723,18 @@ document.addEventListener("DOMContentLoaded", function () {
     const btn = document.getElementById("loginBtn");
     btn.disabled = true;
     try {
-      const result = await api(
-        "admin.login",
-        { password: document.getElementById("loginPassword").value },
-        false
-      );
-      token = result.token;
+      var password = document.getElementById("loginPassword").value;
+      var cfg = await fetchAdminConfig();
+      var expected = String((cfg && cfg.password) || "").trim();
+      if (!expected) throw new Error("رمز در data/admin.json تنظیم نشده");
+      if (String(password).trim() !== expected) {
+        throw new Error("رمز عبور نادرست است");
+      }
+      token = expected;
       localStorage.setItem(TOKEN_KEY, token);
-      await loadAll();
+      localStorage.setItem(SESSION_FLAG, "1");
+      try { await loadAll(); } catch (apiErr) { console.warn("API (اختیاری):", apiErr); }
+      await loadLocalFallback();
       showApp(true);
       goSection("dashboard");
       toast("خوش آمدید", "ok");
@@ -886,6 +748,7 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("logoutBtn").onclick = function () {
     token = "";
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(SESSION_FLAG);
     showApp(false);
   };
 
@@ -902,6 +765,7 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("refreshBtn").onclick = async function () {
     try {
       await loadAll();
+      try { await loadLocalFallback(); } catch (e) {}
       const active = document.querySelector(".section-view.active");
       const id = active ? active.id.replace("sec-", "") : "dashboard";
       goSection(id);
@@ -911,26 +775,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   };
 
-  document.getElementById("btnNewProduct").onclick = function () {
-    openProductEditor(null);
-  };
+  document.getElementById("btnNewProduct").onclick = function () { openProductEditor(null); };
   document.getElementById("productForm").addEventListener("submit", saveProduct);
   document.getElementById("productSearch").addEventListener("input", renderProducts);
   document.getElementById("productFilterActive").addEventListener("change", renderProducts);
 
-  document.getElementById("btnNewCategory").onclick = function () {
-    openCategoryEditor(null);
-  };
+  document.getElementById("btnNewCategory").onclick = function () { openCategoryEditor(null); };
   document.getElementById("categoryForm").addEventListener("submit", saveCategory);
 
-  document.getElementById("btnNewBanner").onclick = function () {
-    openBannerEditor(-1);
-  };
+  document.getElementById("btnNewBanner").onclick = function () { openBannerEditor(-1); };
   document.getElementById("bannerForm").addEventListener("submit", saveBanner);
 
-  document.getElementById("btnNewDiscount").onclick = function () {
-    openDiscountEditor(null);
-  };
+  document.getElementById("btnNewDiscount").onclick = function () { openDiscountEditor(null); };
   document.getElementById("discountForm").addEventListener("submit", saveDiscount);
 
   document.getElementById("orderStatusFilter").addEventListener("change", renderOrders);
