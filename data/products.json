@@ -1,53 +1,5 @@
 [
   {
-    "id": "P26090908165843",
-    "name": "من زیبا",
-    "description": "",
-    "categoryId": "clothing",
-    "category": "👕 پوشاک",
-    "price": 70000,
-    "compareAtPrice": 70000,
-    "attributes": {
-      "رنگ": [
-        "سفید"
-      ]
-    },
-    "variants": [
-      {
-        "id": "V_mtttqplb_qo1l0n",
-        "name": "سفید",
-        "attributes": {
-          "رنگ": "سفید"
-        },
-        "price": 0,
-        "stock": 5,
-        "sku": "",
-        "active": true
-      }
-    ],
-    "stock": 5,
-    "totalStock": 5,
-    "featured": true,
-    "tags": [
-      "ویژه، پر فروش"
-    ],
-    "active": true,
-    "images": [
-      "images/P26090908165843.jpg"
-    ],
-    "image": "images/P26090908165843.jpg",
-    "discountPercent": 0,
-    "discountAmount": 0,
-    "finalPrice": 70000,
-    "currency": "IRR",
-    "createdAt": "2026-09-09T08:16:58.029Z",
-    "updatedAt": "2026-09-13T09:04:21.285Z",
-    "badges": [],
-    "discountType": "none",
-    "discountValue": 0,
-    "discountLabel": "بدون تخفیف"
-  },
-  {
     "id": "P26090910211256",
     "name": "زیبا",
     "description": "",
@@ -72,7 +24,7 @@
     "currency": "IRR",
     "badges": [],
     "createdAt": "2026-09-09T10:21:12.019Z",
-    "updatedAt": "2026-09-13T09:04:21.285Z",
+    "updatedAt": "2026-09-13T09:08:38.103Z",
     "discountType": "none",
     "discountValue": 0,
     "discountLabel": "بدون تخفیف"
