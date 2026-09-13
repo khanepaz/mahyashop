@@ -214,6 +214,36 @@ async function handleApiAction(action, body, event) {
       return settings;
     }
 
+    // ---------- Banners (hero carousel) ----------
+    case "banners.list": {
+      const file = await readJsonFile("data/banners.json", []);
+      return (file.data || [])
+        .filter((b) => b && b.active !== false)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+    }
+
+    case "banners.all": {
+      const file = await readJsonFile("data/banners.json", []);
+      return file.data || [];
+    }
+
+    case "banners.save": {
+      const list = Array.isArray(body.banners)
+        ? body.banners
+        : Array.isArray(body.list)
+          ? body.list
+          : null;
+      if (!list) throw new Error("banners array required");
+      const file = await readJsonFile("data/banners.json", []);
+      await writeJsonFile(
+        "data/banners.json",
+        list,
+        "Update banners",
+        file.sha
+      );
+      return list;
+    }
+
     // ---------- Pricing helper (stateless) ----------
     case "pricing.calculate":
       return calculatePricing(body);
