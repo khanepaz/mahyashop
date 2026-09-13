@@ -1,13 +1,14 @@
 // ============================================================
-// HamedShop - Configuration
+// MahyaShop - Configuration
 // ============================================================
 
 module.exports = {
   GITHUB_OWNER: "khanepaz",
-  GITHUB_REPO: "hamed_test1",
+  GITHUB_REPO: "mahyashop",
   GITHUB_BRANCH: "main",
 
-  SITE_URL: "https://khanepaz.github.io/hamed_test1/",
+  // Primary public site (Netlify) — used for product photos in the bot
+  SITE_URL: "https://hamedtest1.netlify.app/",
 
   API_VERSION: "3.0.0",
 
@@ -25,7 +26,7 @@ module.exports = {
       currency: "IRR",
       shippingCost: 0,
       freeShippingThreshold: 0,
-      shopName: "HamedShop",
+      shopName: "MahyaShop",
       supportChat: ""
     },
     "data/product_drafts.json": {}
