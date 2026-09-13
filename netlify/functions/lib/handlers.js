@@ -9,6 +9,7 @@ const {
   SITE_URL
 } = require("./bale");
 const { isAdminRequest, safeText } = require("./utils");
+const { registerAdminChat } = require("./notifications");
 const { getDraft, saveDraft, deleteDraft } = require("./drafts");
 const {
   startProductWizard,
@@ -86,6 +87,8 @@ async function handleMessage(message, event) {
     return sendMessage(chatId, "⛔ شما دسترسی مدیریت ندارید.");
   }
 
+  try { await registerAdminChat(chatId); } catch (e) { console.warn(e.message); }
+
   if (await handlePhoto(chatId, message)) return;
   if (await handleWizardText(chatId, message)) return;
 
@@ -104,6 +107,8 @@ async function handleCallbackQuery(callbackQuery, event) {
   if (!isAdminRequest(chatId, event)) {
     return sendMessage(chatId, "⛔ دسترسی ندارید.");
   }
+
+  try { await registerAdminChat(chatId); } catch (e) { console.warn(e.message); }
 
   if (data === "menu") return sendMainMenu(chatId);
   if (data === "products.list") return showProducts(chatId);
