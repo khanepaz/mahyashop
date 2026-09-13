@@ -109,8 +109,8 @@ function renderCategories() {
     strip.querySelectorAll(".cat-pill").forEach(function (btn) { btn.onclick = function () { setCategory(btn.dataset.cat); }; });
   }
   if (cards) {
-    cards.innerHTML = categories.map(function (c) {
-      return '<div class="col-4 col-md-3 col-lg-2"><div class="cat-card" data-cat="' + c.id + '"><div class="ico">' + (c.icon || "📦") + '</div><div class="name">' + escapeHtml(c.name) + "</div></div></div>";
+    cards.innerHTML = items.map(function (c) {
+      return '<div class="col-4 col-md-3 col-lg-2"><div class="cat-card' + (currentCategory === c.id ? ' active' : '') + '" data-cat="' + c.id + '"><div class="ico">' + (c.icon || "📦") + '</div><div class="name">' + escapeHtml(c.name) + "</div></div></div>";
     }).join("");
     cards.querySelectorAll(".cat-card").forEach(function (el) {
       el.onclick = function () { setCategory(el.dataset.cat); document.getElementById("productsSection").scrollIntoView({ behavior: "smooth" }); };
@@ -320,7 +320,10 @@ async function submitOrder(e) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'orders.create',
-        payload: { customer: { name: name, phone: phone, address: address, note: note }, items: items, total: total }
+        customer: { name: name, phone: phone, address: address, note: note },
+        items: items,
+        note: note,
+        total: total
       })
     }, 12000);
     var data = await res.json();
