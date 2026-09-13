@@ -1,1 +1,34 @@
-[]
+[
+  {
+    "name": "روسری",
+    "description": "بهترین ها",
+    "compareAtPrice": 300000,
+    "discountType": "percent",
+    "discountValue": 5,
+    "stock": 5,
+    "totalStock": 5,
+    "categoryId": "clothing",
+    "category": "👕 پوشاک",
+    "image": "images/download.jpeg",
+    "images": [
+      "images/download.jpeg"
+    ],
+    "tags": [
+      "زیبا، ابریشمی"
+    ],
+    "active": true,
+    "featured": false,
+    "id": "P26091311232750",
+    "createdAt": "2026-09-13T11:23:27.400Z",
+    "updatedAt": "2026-09-13T11:23:27.401Z",
+    "price": 285000,
+    "finalPrice": 285000,
+    "discountAmount": 15000,
+    "discountPercent": 5,
+    "discountLabel": "5%",
+    "currency": "IRR",
+    "attributes": {},
+    "variants": [],
+    "badges": []
+  }
+]
