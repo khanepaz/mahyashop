@@ -28,6 +28,7 @@ const { readJsonFile, writeJsonFile } = require("./github");
 const { JSON_DEFAULTS } = require("./config");
 const { nowISO, safeText, safeNumber } = require("./utils");
 const { calculatePricing } = require("./pricing");
+const { notifyNewOrder } = require("./notifications");
 
 async function handleApiAction(action, body, event) {
   switch (action) {
@@ -134,8 +135,23 @@ async function handleApiAction(action, body, event) {
       return order;
     }
 
-    case "orders.create":
-      return createOrder(body);
+    case "orders.create": {
+      const orderBody = body.payload && typeof body.payload === "object"
+        ? { ...body.payload, ...body }
+        : body;
+      if (body.payload && typeof body.payload === "object") {
+        if (body.payload.customer) orderBody.customer = body.payload.customer;
+        if (body.payload.items) orderBody.items = body.payload.items;
+        if (body.payload.note != null) orderBody.note = body.payload.note;
+      }
+      const order = await createOrder(orderBody);
+      try {
+        await notifyNewOrder(order);
+      } catch (e) {
+        console.warn("notifyNewOrder:", e.message);
+      }
+      return order;
+    }
 
     case "orders.status.update":
       return updateOrderStatus(
