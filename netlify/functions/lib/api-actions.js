@@ -26,13 +26,39 @@ const {
 const { getOrdersFile, createOrder, updateOrderStatus } = require("./orders");
 const { readJsonFile, writeJsonFile } = require("./github");
 const { JSON_DEFAULTS } = require("./config");
-const { nowISO, safeText, safeNumber } = require("./utils");
+const { nowISO, safeText, safeNumber, checkAdminPassword, getAdminSecret, requireAdminApi } = require("./utils");
 const { calculatePricing } = require("./pricing");
 const { notifyNewOrder } = require("./notifications");
 
 async function handleApiAction(action, body, event) {
+  const writeActions = new Set([
+    "products.create", "products.update", "products.delete",
+    "products.pricing.update", "products.stock.update", "products.status.update",
+    "categories.create", "categories.update", "categories.delete",
+    "badges.create", "badges.update", "badges.delete",
+    "orders.status.update",
+    "discounts.create", "discounts.update", "discounts.delete",
+    "settings.update", "banners.save"
+  ]);
+  if (writeActions.has(action)) {
+    requireAdminApi(event);
+  }
+
   switch (action) {
-    // ---------- Products ----------
+    case "admin.login": {
+      const password = safeText(body.password);
+      if (!checkAdminPassword(password)) {
+        const err = new Error("رمز عبور نادرست است");
+        err.statusCode = 401;
+        throw err;
+      }
+      return {
+        ok: true,
+        token: getAdminSecret(),
+        shopName: "MahyaShop"
+      };
+    }
+
     case "products.list": {
       const file = await getProductsFile();
       return file.data.map(normalizeProduct);
@@ -76,7 +102,6 @@ async function handleApiAction(action, body, event) {
       });
     }
 
-    // ---------- Categories ----------
     case "categories.list": {
       const file = await getCategoriesFile();
       return file.data;
@@ -94,7 +119,6 @@ async function handleApiAction(action, body, event) {
     case "categories.delete":
       return deleteCategory(body.id || body.categoryId);
 
-    // ---------- Badges ----------
     case "badges.list": {
       const file = await getBadgesFile();
       return file.data;
@@ -109,7 +133,6 @@ async function handleApiAction(action, body, event) {
     case "badges.delete":
       return deleteBadge(body.id || body.badgeId);
 
-    // ---------- Variants / Inventory ----------
     case "variants.list": {
       const file = await readJsonFile("data/variants.json", []);
       return file.data;
@@ -120,7 +143,6 @@ async function handleApiAction(action, body, event) {
       return file.data;
     }
 
-    // ---------- Orders ----------
     case "orders.list": {
       const file = await getOrdersFile();
       return file.data;
@@ -159,16 +181,67 @@ async function handleApiAction(action, body, event) {
         body.status
       );
 
-    // ---------- Customers ----------
     case "customers.list": {
       const file = await readJsonFile("data/customers.json", []);
       return file.data;
     }
 
-    // ---------- Discounts ----------
     case "discounts.list": {
       const file = await readJsonFile("data/discounts.json", []);
       return file.data;
+    }
+
+    case "discounts.create": {
+      const file = await readJsonFile("data/discounts.json", []);
+      const code = safeText(body.code || (body.discount && body.discount.code));
+      if (!code) throw new Error("کد تخفیف الزامی است");
+      const exists = file.data.find(
+        (d) => safeText(d.code).toLowerCase() === code.toLowerCase()
+      );
+      if (exists) throw new Error("این کد قبلاً ثبت شده");
+      const item = {
+        id: "D_" + Date.now().toString(36),
+        code,
+        type: safeText(body.type || "percent") === "amount" ? "amount" : "percent",
+        value: safeNumber(body.value),
+        active: body.active !== false,
+        createdAt: nowISO()
+      };
+      file.data.push(item);
+      await writeJsonFile("data/discounts.json", file.data, "Add discount " + code, file.sha);
+      return item;
+    }
+
+    case "discounts.update": {
+      const file = await readJsonFile("data/discounts.json", []);
+      const id = body.id || body.discountId;
+      const idx = file.data.findIndex(
+        (d) => String(d.id) === String(id) || safeText(d.code).toLowerCase() === safeText(id).toLowerCase()
+      );
+      if (idx < 0) throw new Error("کد تخفیف پیدا نشد");
+      const prev = file.data[idx];
+      const changes = body.changes || body;
+      file.data[idx] = {
+        ...prev,
+        ...changes,
+        id: prev.id,
+        code: safeText(changes.code || prev.code) || prev.code,
+        updatedAt: nowISO()
+      };
+      await writeJsonFile("data/discounts.json", file.data, "Update discount", file.sha);
+      return file.data[idx];
+    }
+
+    case "discounts.delete": {
+      const file = await readJsonFile("data/discounts.json", []);
+      const id = body.id || body.discountId || body.code;
+      const idx = file.data.findIndex(
+        (d) => String(d.id) === String(id) || safeText(d.code).toLowerCase() === safeText(id).toLowerCase()
+      );
+      if (idx < 0) throw new Error("کد تخفیف پیدا نشد");
+      const removed = file.data.splice(idx, 1)[0];
+      await writeJsonFile("data/discounts.json", file.data, "Delete discount", file.sha);
+      return removed;
     }
 
     case "discounts.validate": {
@@ -183,7 +256,6 @@ async function handleApiAction(action, body, event) {
       );
     }
 
-    // ---------- Settings ----------
     case "settings.get": {
       const file = await readJsonFile(
         "data/settings.json",
@@ -214,7 +286,6 @@ async function handleApiAction(action, body, event) {
       return settings;
     }
 
-    // ---------- Banners (hero carousel) ----------
     case "banners.list": {
       const file = await readJsonFile("data/banners.json", []);
       return (file.data || [])
@@ -244,7 +315,6 @@ async function handleApiAction(action, body, event) {
       return list;
     }
 
-    // ---------- Pricing helper (stateless) ----------
     case "pricing.calculate":
       return calculatePricing(body);
 
