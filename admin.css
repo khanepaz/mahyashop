@@ -70,8 +70,8 @@ body.admin-body {
   position: fixed;
   top: 0;
   bottom: 0;
-  left: 0;
-  right: auto;
+  right: 0;
+  left: auto;
   z-index: 1040;
   display: flex;
   flex-direction: column;
