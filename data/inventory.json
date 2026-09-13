@@ -1,18 +1,10 @@
 [
   {
-    "productId": "P26090807525753",
-    "productName": "خودم آبی",
-    "stock": 0,
-    "active": true,
-    "updatedAt": "2026-09-13T09:03:05.118Z",
-    "variants": []
-  },
-  {
     "productId": "P26090904564400",
     "productName": "من",
     "stock": 0,
     "active": true,
-    "updatedAt": "2026-09-13T09:03:05.118Z",
+    "updatedAt": "2026-09-13T09:03:33.344Z",
     "variants": []
   },
   {
@@ -20,7 +12,7 @@
     "productName": "من زیبا",
     "stock": 5,
     "active": true,
-    "updatedAt": "2026-09-13T09:03:05.118Z",
+    "updatedAt": "2026-09-13T09:03:33.344Z",
     "variants": [
       {
         "variantId": "V_mtttqplb_qo1l0n",
@@ -34,7 +26,7 @@
     "productName": "زیبا",
     "stock": 2,
     "active": true,
-    "updatedAt": "2026-09-13T09:03:05.118Z",
+    "updatedAt": "2026-09-13T09:03:33.344Z",
     "variants": []
   }
 ]
