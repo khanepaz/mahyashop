@@ -1,10 +1,11 @@
 const API_URL = "https://hamedtest1.netlify.app/.netlify/functions/api";
 const PRODUCTS_FALLBACK = "data/products.json";
 const CATEGORIES_FALLBACK = "data/categories.json";
+const BANNERS_FALLBACK = "data/banners.json";
 const BALE_BOT_URL = "https://ble.ir/Hamedtestshop_bot";
 const API_TIMEOUT_MS = 4000;
 
-let products = [], categories = [], cart = loadCart();
+let products = [], categories = [], banners = [], cart = loadCart();
 let currentCategory = "all", currentSearch = "", currentSort = "newest";
 let priceMin = null, priceMax = null, stockFilter = "all";
 let selectedProduct = null, selectedAttributes = {}, selectedQuantity = 1, lastOrderId = null;
@@ -79,13 +80,72 @@ async function loadApiCategories() {
   }
   return false;
 }
+async function loadLocalBanners() {
+  try {
+    var res = await fetch(BANNERS_FALLBACK, { cache: "default" });
+    if (!res.ok) return false;
+    var data = await res.json();
+    banners = (Array.isArray(data) ? data : []).filter(function (b) { return b && b.active !== false; });
+    banners.sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+    return banners.length > 0;
+  } catch (e) { return false; }
+}
+async function loadApiBanners() {
+  try {
+    var res = await fetchWithTimeout(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "banners.list" }),
+      cache: "no-store"
+    }, API_TIMEOUT_MS);
+    var data = await res.json();
+    if (data && data.ok && Array.isArray(data.result)) {
+      banners = data.result.filter(function (b) { return b && b.active !== false; });
+      banners.sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+      return true;
+    }
+  } catch (e) { console.warn(e); }
+  return false;
+}
+function renderBanners() {
+  var inner = document.getElementById("heroInner");
+  var indicators = document.getElementById("heroIndicators");
+  if (!inner) return;
+  if (!banners.length) {
+    inner.innerHTML = '<div class="carousel-item active"><div class="hero-slide-inner" style="background-image:linear-gradient(120deg,rgba(15,20,40,.9),rgba(15,52,96,.8))"><div><h2>مهیا شاپ</h2><p>به فروشگاه خوش آمدید.</p><a href="#productsSection" class="btn btn-dk mt-2">مشاهده محصولات</a></div></div></div>';
+    if (indicators) indicators.innerHTML = "";
+    return;
+  }
+  if (indicators) {
+    indicators.innerHTML = banners.map(function (b, i) {
+      return '<button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="' + i + '"' + (i === 0 ? ' class="active"' : '') + '></button>';
+    }).join("");
+  }
+  inner.innerHTML = banners.map(function (b, i) {
+    var grad = b.gradient || "linear-gradient(120deg,rgba(15,20,40,.9),rgba(15,52,96,.8))";
+    var img = (b.image || "").trim();
+    var bg = img
+      ? ("background-image:" + grad + ",url('" + img.replace(/'/g, "%27") + "')")
+      : ("background-image:" + grad);
+    var btn = (b.buttonText && b.link)
+      ? ('<a href="' + escapeHtml(b.link) + '" class="btn btn-dk mt-2">' + escapeHtml(b.buttonText) + '</a>')
+      : "";
+    return '<div class="carousel-item' + (i === 0 ? ' active' : '') + '">' +
+      '<div class="hero-slide-inner" style="' + bg + '">' +
+      '<div><h2>' + escapeHtml(b.title || "") + '</h2>' +
+      (b.subtitle ? '<p>' + escapeHtml(b.subtitle) + '</p>' : '') +
+      btn + '</div></div></div>';
+  }).join("");
+}
 async function loadData() {
   var grid = document.getElementById("productsGrid");
   if (grid) grid.innerHTML = '<div class="col-12"><div class="empty-state"><div class="spinner-dk"></div>در حال بارگذاری...</div></div>';
-  await Promise.all([loadLocalProducts(), loadLocalCategories()]);
+  await Promise.all([loadLocalProducts(), loadLocalCategories(), loadLocalBanners()]);
+  renderBanners();
   if (products.length || categories.length) { renderCategories(); renderSpecials(); renderProducts(); updateCartUI(); }
   try {
-    var okP = await loadApiProducts(), okC = await loadApiCategories();
+    var okP = await loadApiProducts(), okC = await loadApiCategories(), okB = await loadApiBanners();
+    if (okB) renderBanners();
     if (okP || okC) { renderCategories(); renderSpecials(); renderProducts(); updateCartUI(); }
   } catch (e) { console.warn(e); }
   if (!products.length && grid) grid.innerHTML = '<div class="col-12"><div class="empty-state">محصولی برای نمایش نیست</div></div>';
