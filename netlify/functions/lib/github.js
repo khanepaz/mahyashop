@@ -95,7 +95,6 @@ async function writeJsonFile(path, data, message, sha = null) {
       body: JSON.stringify(body)
     });
   } catch (error) {
-    // Concurrent edit → refresh SHA and retry once
     if (error.status !== 409) throw error;
 
     const latest = await readJsonFile(path, JSON_DEFAULTS[path] ?? []);
@@ -113,9 +112,6 @@ async function writeJsonFile(path, data, message, sha = null) {
   }
 }
 
-/**
- * Upload binary content (e.g. image) to the repository.
- */
 async function writeBinaryFile(path, buffer, message, sha = null) {
   const encoded = Buffer.from(buffer).toString("base64");
 
@@ -135,7 +131,6 @@ async function writeBinaryFile(path, buffer, message, sha = null) {
   } catch (error) {
     if (error.status !== 409) throw error;
 
-    // Get current sha if exists
     try {
       const existing = await githubRequest(
         `${githubContentPath(path)}?ref=${encodeURIComponent(GITHUB_BRANCH)}`
@@ -152,10 +147,38 @@ async function writeBinaryFile(path, buffer, message, sha = null) {
   }
 }
 
+/** Delete a file from the repository (e.g. product image). */
+async function deleteRepoFile(path, message) {
+  const clean = String(path || "").replace(/^\.\//, "").replace(/^\/+/, "");
+  if (!clean) return false;
+
+  try {
+    const existing = await githubRequest(
+      `${githubContentPath(clean)}?ref=${encodeURIComponent(GITHUB_BRANCH)}`
+    );
+    if (!existing || !existing.sha) return false;
+
+    await githubRequest(githubContentPath(clean), {
+      method: "DELETE",
+      body: JSON.stringify({
+        message: message || `Delete ${clean}`,
+        sha: existing.sha,
+        branch: GITHUB_BRANCH
+      })
+    });
+    return true;
+  } catch (error) {
+    if (error.status === 404) return false;
+    console.warn("deleteRepoFile:", clean, error.message);
+    return false;
+  }
+}
+
 module.exports = {
   githubRequest,
   githubContentPath,
   readJsonFile,
   writeJsonFile,
-  writeBinaryFile
+  writeBinaryFile,
+  deleteRepoFile
 };
