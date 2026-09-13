@@ -68,7 +68,10 @@ body.admin-body {
   background: var(--adm-primary);
   color: #e2e8f0;
   position: fixed;
-  inset: 0 auto 0 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: auto;
   z-index: 1040;
   display: flex;
   flex-direction: column;
@@ -262,13 +265,26 @@ body.admin-body {
 
 @media (max-width: 991.98px) {
   .admin-sidebar {
-    transform: translateX(100%);
+    width: min(var(--adm-sidebar), 86vw);
+    transform: translateX(-110%);
+    box-shadow: none;
   }
   .admin-sidebar.open {
     transform: translateX(0);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.25);
   }
   .admin-main {
     margin-right: 0;
+    margin-left: 0;
+    width: 100%;
+  }
+  .admin-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  body.menu-open {
+    overflow: hidden;
   }
 }
 
