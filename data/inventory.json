@@ -1,18 +1,10 @@
 [
   {
-    "productId": "P26090904564400",
-    "productName": "من",
-    "stock": 0,
-    "active": true,
-    "updatedAt": "2026-09-13T09:03:33.344Z",
-    "variants": []
-  },
-  {
     "productId": "P26090908165843",
     "productName": "من زیبا",
     "stock": 5,
     "active": true,
-    "updatedAt": "2026-09-13T09:03:33.344Z",
+    "updatedAt": "2026-09-13T09:04:23.082Z",
     "variants": [
       {
         "variantId": "V_mtttqplb_qo1l0n",
@@ -26,7 +18,7 @@
     "productName": "زیبا",
     "stock": 2,
     "active": true,
-    "updatedAt": "2026-09-13T09:03:33.344Z",
+    "updatedAt": "2026-09-13T09:04:23.082Z",
     "variants": []
   }
 ]
