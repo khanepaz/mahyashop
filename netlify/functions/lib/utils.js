@@ -81,21 +81,57 @@ function parseJsonBody(event) {
   }
 }
 
+function getAdminSecret() {
+  return (
+    safeText(process.env.ADMIN_PASSWORD) ||
+    safeText(process.env.ADMIN_API_KEY) ||
+    "admin123"
+  );
+}
+
+function checkAdminPassword(password) {
+  return safeText(password) === getAdminSecret();
+}
+
 function isAdminRequest(chatId, event) {
   const adminChat = safeText(process.env.ADMIN_CHAT_ID);
   const apiKey =
     event?.headers?.["x-admin-key"] ||
     event?.headers?.["X-Admin-Key"];
 
-  if (adminChat) {
+  if (apiKey && apiKey === getAdminSecret()) {
+    return true;
+  }
+
+  if (adminChat && chatId !== undefined && chatId !== null) {
     return String(chatId) === adminChat;
   }
 
-  if (process.env.ADMIN_API_KEY) {
-    return apiKey === process.env.ADMIN_API_KEY;
+  if (process.env.ADMIN_API_KEY || process.env.ADMIN_PASSWORD) {
+    if (chatId !== undefined && chatId !== null && !adminChat) {
+      return true;
+    }
+    return false;
   }
 
-  // Backward compatibility (no admin restriction configured)
+  return true;
+}
+
+function requireAdminApi(event) {
+  const apiKey =
+    event?.headers?.["x-admin-key"] ||
+    event?.headers?.["X-Admin-Key"];
+  if (apiKey && apiKey === getAdminSecret()) return true;
+  if (!apiKey) {
+    const err = new Error("Unauthorized — وارد پنل شوید");
+    err.statusCode = 401;
+    throw err;
+  }
+  if (apiKey !== getAdminSecret()) {
+    const err = new Error("Unauthorized");
+    err.statusCode = 401;
+    throw err;
+  }
   return true;
 }
 
@@ -110,5 +146,8 @@ module.exports = {
   formatPrice,
   jsonResponse,
   parseJsonBody,
-  isAdminRequest
+  isAdminRequest,
+  getAdminSecret,
+  checkAdminPassword,
+  requireAdminApi
 };
