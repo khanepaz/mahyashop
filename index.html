@@ -1,1 +1,255 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مهیا شاپ | فروشگاه آنلاین</title>
+  <meta name="description" content="فروشگاه آنلاین مهیا شاپ — خرید آسان، ارسال سریع" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="./shop.css" />
+</head>
+<body>
+  <div class="top-bar d-none d-md-block">
+    <div class="container d-flex justify-content-between">
+      <span>ارسال سریع · پرداخت امن در پیام‌رسان بله</span>
+      <span>پشتیبانی آنلاین</span>
+    </div>
+  </div>
+
+  <nav class="shop-nav py-2">
+    <div class="container d-flex align-items-center gap-3">
+      <a href="./" class="d-flex align-items-center gap-2 text-decoration-none">
+        <span class="logo-mark">م</span>
+        <span class="logo-text d-none d-sm-inline">مهیا شاپ</span>
+      </a>
+      <div class="search-wrap flex-grow-1">
+        <input id="searchInput" type="search" class="form-control" placeholder="جستجوی نام محصول، دسته..." autocomplete="off" />
+        <i class="bi bi-search"></i>
+      </div>
+      <button class="nav-icon-btn" id="cartBtn" type="button" data-bs-toggle="offcanvas" data-bs-target="#cartDrawer" aria-label="سبد خرید">
+        <i class="bi bi-cart3 fs-5"></i>
+        <span class="badge text-bg-danger rounded-pill d-none" id="cartCount">0</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="cat-strip">
+    <div class="container" id="categoryStrip">
+      <button type="button" class="cat-pill active" data-cat="all">✨ همه</button>
+    </div>
+  </div>
+
+  <main class="container py-3 py-md-4">
+    <div id="heroCarousel" class="carousel slide hero-carousel mb-4" data-bs-ride="carousel">
+      <div class="carousel-indicators">
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
+      </div>
+      <div class="carousel-inner">
+        <div class="carousel-item active">
+          <div class="hero-slide-inner" style="background-image:linear-gradient(120deg,rgba(15,20,40,.88),rgba(15,52,96,.75)),url('images/P26090908165843.jpg')">
+            <div>
+              <h2>خرید هوشمند، ارسال سریع</h2>
+              <p>محصولات منتخب را آنلاین سفارش دهید و پرداخت را در بله انجام دهید.</p>
+              <a href="#productsSection" class="btn btn-dk mt-2">مشاهده محصولات</a>
+            </div>
+          </div>
+        </div>
+        <div class="carousel-item">
+          <div class="hero-slide-inner" style="background-image:linear-gradient(120deg,rgba(80,20,40,.85),rgba(160,30,50,.7)),url('images/P26090910211256.jpg')">
+            <div>
+              <h2>پیشنهادهای ویژه</h2>
+              <p>تخفیف‌دارها و محصولات پرفروش همین حالا در دسترس شماست.</p>
+              <a href="#specialsSection" class="btn btn-dk mt-2">مشاهده ویژه</a>
+            </div>
+          </div>
+        </div>
+        <div class="carousel-item">
+          <div class="hero-slide-inner" style="background-image:linear-gradient(120deg,rgba(20,40,30,.88),rgba(30,90,70,.7)),url('images/P26090807525753.jpg')">
+            <div>
+              <h2>دسته‌بندی‌های متنوع</h2>
+              <p>پوشاک، دیجیتال، زیبایی و بیشتر — سریع پیدا کنید.</p>
+              <a href="#catsSection" class="btn btn-dk mt-2">دسته‌بندی‌ها</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon"></span>
+      </button>
+    </div>
+
+    <section id="catsSection" class="mb-4">
+      <div class="sec-head"><h3><span class="dot"></span> دسته‌بندی‌ها</h3></div>
+      <div class="row g-2 g-md-3" id="categoryCards"></div>
+    </section>
+
+    <section id="specialsSection" class="mb-4">
+      <div class="sec-head">
+        <h3><span class="dot"></span> پیشنهادات ویژه و تخفیف‌دار</h3>
+        <button type="button" class="btn btn-sm btn-outline-danger" id="showDiscountedBtn">فقط تخفیف‌دار</button>
+      </div>
+      <div class="h-scroll" id="specialsRow"><div class="text-muted small p-3">در حال بارگذاری...</div></div>
+    </section>
+
+    <section id="productsSection">
+      <div class="sec-head">
+        <h3><span class="dot"></span> همه محصولات</h3>
+        <span class="text-muted small" id="resultInfo">—</span>
+      </div>
+      <div class="row g-3">
+        <aside class="col-lg-3">
+          <div class="filter-box">
+            <h6><i class="bi bi-funnel"></i> فیلترها</h6>
+            <div class="mb-3">
+              <label class="form-label">مرتب‌سازی</label>
+              <select class="form-select form-select-sm" id="sortSelect">
+                <option value="newest">جدیدترین</option>
+                <option value="price-asc">ارزان‌ترین</option>
+                <option value="price-desc">گران‌ترین</option>
+                <option value="discount">بیشترین تخفیف</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">دسته‌بندی</label>
+              <select class="form-select form-select-sm" id="filterCategory"><option value="all">همه</option></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">حداقل قیمت (تومان)</label>
+              <input type="number" class="form-control form-control-sm" id="priceMin" min="0" placeholder="مثلاً ۰" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">حداکثر قیمت (تومان)</label>
+              <input type="number" class="form-control form-control-sm" id="priceMax" min="0" placeholder="مثلاً ۵۰۰۰۰۰" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">نوع / موجودی</label>
+              <select class="form-select form-select-sm" id="filterStock">
+                <option value="all">همه</option>
+                <option value="in">فقط موجود</option>
+                <option value="out">ناموجود</option>
+                <option value="featured">ویژه</option>
+                <option value="discount">تخفیف‌دار</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-dk w-100 btn-sm" id="applyFiltersBtn">اعمال فیلتر</button>
+            <button type="button" class="btn btn-outline-secondary w-100 btn-sm mt-2" id="resetFiltersBtn">پاک کردن</button>
+          </div>
+        </aside>
+        <div class="col-lg-9">
+          <div class="row g-2 g-md-3" id="productsGrid">
+            <div class="col-12"><div class="empty-state"><div class="spinner-dk"></div>در حال بارگذاری...</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer-shop">
+    <div class="container">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <h6>مهیا شاپ</h6>
+          <p class="mb-0">فروشگاه آنلاین با سفارش آسان و پیگیری در پیام‌رسان بله.</p>
+        </div>
+        <div class="col-md-4">
+          <h6>دسترسی سریع</h6>
+          <div class="d-flex flex-column gap-1">
+            <a href="#productsSection">محصولات</a>
+            <a href="#catsSection">دسته‌بندی‌ها</a>
+            <a href="#specialsSection">پیشنهاد ویژه</a>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <h6>پیگیری سفارش</h6>
+          <p class="mb-0">بعد از ثبت سفارش، از ربات بله برای پرداخت و پیگیری استفاده کنید.</p>
+        </div>
+      </div>
+      <hr class="border-secondary my-3" />
+      <div class="text-center small">© مهیا شاپ</div>
+    </div>
+  </footer>
+
+  <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content" id="productBox"></div>
+    </div>
+  </div>
+
+  <div class="offcanvas offcanvas-start" tabindex="-1" id="cartDrawer">
+    <div class="offcanvas-header border-bottom">
+      <h5 class="offcanvas-title">سبد خرید</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" id="cartClose"></button>
+    </div>
+    <div class="offcanvas-body" id="cartItems"></div>
+    <div class="border-top p-3">
+      <div class="d-flex justify-content-between fw-bold mb-2">
+        <span>جمع</span><span id="cartTotal">۰ تومان</span>
+      </div>
+      <button class="btn btn-dk w-100" id="checkoutBtn" type="button">ادامه و ثبت سفارش</button>
+    </div>
+  </div>
+
+  <div class="modal fade" id="checkoutModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">ثبت سفارش</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" id="checkoutClose"></button>
+        </div>
+        <form id="checkoutForm">
+          <div class="modal-body">
+            <div class="mb-2">
+              <label class="form-label small" for="customerName">نام و نام خانوادگی</label>
+              <input id="customerName" class="form-control" required placeholder="مثلاً علی رضایی" />
+            </div>
+            <div class="mb-2">
+              <label class="form-label small" for="customerPhone">شماره موبایل</label>
+              <input id="customerPhone" class="form-control" required inputmode="tel" placeholder="09xxxxxxxxx" />
+            </div>
+            <div class="mb-2">
+              <label class="form-label small" for="customerAddress">آدرس کامل</label>
+              <textarea id="customerAddress" class="form-control" required rows="2" placeholder="شهر، خیابان، پلاک..."></textarea>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small" for="customerNote">توضیحات (اختیاری)</label>
+              <textarea id="customerNote" class="form-control" rows="2" placeholder="ساعت تماس..."></textarea>
+            </div>
+            <div class="border-top pt-2 mt-2 small text-muted">
+              <div class="d-flex justify-content-between"><span>تعداد اقلام</span><span id="checkoutItemsCount">۰</span></div>
+              <div class="d-flex justify-content-between fw-bold text-dark mt-1"><span>مبلغ قابل پرداخت</span><span id="checkoutTotal">۰ تومان</span></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">انصراف</button>
+            <button class="btn btn-dk" type="submit" id="submitOrderBtn">تأیید نهایی سفارش</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-center p-3">
+        <div class="mx-auto mb-3 rounded-circle" style="width:64px;height:64px;background:#dcfce7;color:#16a34a;font-size:28px;display:grid;place-items:center">✓</div>
+        <h5>سفارش ثبت شد</h5>
+        <p class="text-muted small" id="successMsg" style="white-space:pre-line">سفارش شما ثبت شد.</p>
+        <a class="btn btn-dk w-100 mb-2" id="baleOpenBtn" href="#" target="_blank" rel="noopener">باز کردن ربات بله</a>
+        <button class="btn btn-outline-secondary w-100" data-bs-dismiss="modal" id="successClose">بستن</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-msg" id="toast"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="./shop.js"></script>
+</body>
+</html>
