@@ -2,7 +2,7 @@
 // HamedShop - Products, Variants, Inventory
 // ============================================================
 
-const { readJsonFile, writeJsonFile, writeBinaryFile } = require("./github");
+const { readJsonFile, writeJsonFile, writeBinaryFile, deleteRepoFile } = require("./github");
 const { downloadBaleFile } = require("./bale");
 const {
   nowISO,
@@ -13,10 +13,6 @@ const {
   safeArray
 } = require("./utils");
 const { calculatePricing, applyPricingToProduct } = require("./pricing");
-
-// ----------------------------------------------------------
-// Normalize
-// ----------------------------------------------------------
 
 function normalizeProduct(product = {}) {
   const variants = safeArray(product.variants).map((variant) => ({
@@ -45,7 +41,6 @@ function normalizeProduct(product = {}) {
     );
   }
 
-  // Central pricing – always derived from compareAtPrice + discount
   const pricing = calculatePricing({
     compareAtPrice:
       product.compareAtPrice ??
@@ -56,8 +51,6 @@ function normalizeProduct(product = {}) {
     discountValue: product.discountValue ?? 0
   });
 
-  // If legacy data only has price + compareAtPrice without discountType,
-  // reconstruct discountType from the difference so old products still work.
   if (
     (product.discountType == null || product.discountType === "") &&
     pricing.compareAtPrice > pricing.price
@@ -105,10 +98,6 @@ function normalizeProduct(product = {}) {
   };
 }
 
-// ----------------------------------------------------------
-// File helpers
-// ----------------------------------------------------------
-
 async function getProductsFile() {
   return readJsonFile("data/products.json", []);
 }
@@ -128,10 +117,6 @@ async function getProduct(productId) {
     file.data.map(normalizeProduct).find((p) => p.id === productId) || null
   );
 }
-
-// ----------------------------------------------------------
-// Index sync (variants + inventory)
-// ----------------------------------------------------------
 
 async function syncIndexes(products) {
   const variants = [];
@@ -179,10 +164,6 @@ async function syncIndexes(products) {
   );
 }
 
-// ----------------------------------------------------------
-// CRUD
-// ----------------------------------------------------------
-
 async function createProduct(product) {
   const file = await getProductsFile();
 
@@ -214,7 +195,6 @@ async function updateProduct(productId, changes) {
     throw new Error("Product not found");
   }
 
-  // If price-related fields change, recompute via pricing engine
   const merged = {
     ...products[index],
     ...changes,
@@ -244,31 +224,44 @@ async function deleteProduct(productId) {
   await saveProductsFile(products, file.sha, `Delete product ${productId}`);
   await syncIndexes(products);
 
+  // حذف فایل‌های تصویر مرتبط از ریپو
+  try {
+    const paths = new Set();
+    safeArray(deleted.images).forEach((p) => {
+      if (p) paths.add(String(p).trim());
+    });
+    if (deleted.image) paths.add(String(deleted.image).trim());
+
+    for (const raw of paths) {
+      if (!raw || /^https?:\/\//i.test(raw)) continue;
+      let rel = raw.replace(/^\.\//, "");
+      if (!rel.startsWith("images/")) {
+        if (rel.includes("/")) continue;
+        rel = "images/" + rel;
+      }
+      try {
+        await deleteRepoFile(rel, `Delete image after product ${productId}`);
+      } catch (e) {
+        console.warn("image delete failed:", rel, e.message);
+      }
+    }
+  } catch (e) {
+    console.warn("deleteProduct images:", e.message);
+  }
+
   return deleted;
 }
 
-/**
- * Update only pricing fields using the centralized engine.
- * Admin supplies compareAtPrice + discountType + discountValue.
- */
 async function updateProductPricing(productId, pricingInput) {
   const pricing = calculatePricing(pricingInput);
   return updateProduct(productId, pricing);
 }
-
-// ----------------------------------------------------------
-// Image upload (Bale → GitHub)
-// ----------------------------------------------------------
 
 async function uploadBaleImage(fileId, path) {
   const buffer = await downloadBaleFile(fileId);
   await writeBinaryFile(path, buffer, `Upload image ${path}`);
   return path;
 }
-
-// ----------------------------------------------------------
-// Attribute / Variant helpers
-// ----------------------------------------------------------
 
 function parseAttributes(text) {
   const result = {};
