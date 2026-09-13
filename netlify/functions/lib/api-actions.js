@@ -23,7 +23,7 @@ const {
   updateBadge,
   deleteBadge
 } = require("./badges");
-const { getOrdersFile, createOrder, updateOrderStatus } = require("./orders");
+const { getOrdersFile, createOrder, updateOrderStatus, markOrderPaid } = require("./orders");
 const { readJsonFile, writeJsonFile, writeBinaryFile } = require("./github");
 const { JSON_DEFAULTS } = require("./config");
 const { nowISO, safeText, safeNumber, checkAdminPassword, getAdminSecret, requireAdminApi } = require("./utils");
@@ -36,7 +36,7 @@ async function handleApiAction(action, body, event) {
     "products.pricing.update", "products.stock.update", "products.status.update",
     "categories.create", "categories.update", "categories.delete",
     "badges.create", "badges.update", "badges.delete",
-    "orders.status.update",
+    "orders.status.update", "orders.payment.mark",
     "discounts.create", "discounts.update", "discounts.delete",
     "settings.update", "banners.save", "media.upload"
   ]);
@@ -79,28 +79,11 @@ async function handleApiAction(action, body, event) {
     case "products.delete":
       return deleteProduct(body.id || body.productId);
 
-    case "products.pricing.update": {
-      return updateProductPricing(body.id || body.productId, {
-        compareAtPrice: body.compareAtPrice,
-        discountType: body.discountType || "none",
-        discountValue: body.discountValue || 0
-      });
-    }
-
-    case "products.stock.update": {
-      const productId = body.id || body.productId;
-      const stock = Math.max(0, safeNumber(body.stock));
-      return updateProduct(productId, {
-        stock,
-        totalStock: stock
-      });
-    }
-
-    case "products.status.update": {
-      return updateProduct(body.id || body.productId, {
-        active: body.active !== false
-      });
-    }
+    case "products.pricing.update":
+      return updateProductPricing(
+        body.id || body.productId,
+        body.pricing || body
+      );
 
     case "categories.list": {
       const file = await getCategoriesFile();
@@ -111,10 +94,7 @@ async function handleApiAction(action, body, event) {
       return createCategory(body.category || body);
 
     case "categories.update":
-      return updateCategory(
-        body.id || body.categoryId,
-        body.changes || body
-      );
+      return updateCategory(body.id || body.categoryId, body.changes || body);
 
     case "categories.delete":
       return deleteCategory(body.id || body.categoryId);
@@ -132,11 +112,6 @@ async function handleApiAction(action, body, event) {
 
     case "badges.delete":
       return deleteBadge(body.id || body.badgeId);
-
-    case "variants.list": {
-      const file = await readJsonFile("data/variants.json", []);
-      return file.data;
-    }
 
     case "inventory.list": {
       const file = await readJsonFile("data/inventory.json", []);
@@ -181,6 +156,9 @@ async function handleApiAction(action, body, event) {
         body.status
       );
 
+    case "orders.payment.mark":
+      return markOrderPaid(body.id || body.orderId, body.payment || body.meta || {});
+
     case "customers.list": {
       const file = await readJsonFile("data/customers.json", []);
       return file.data;
@@ -198,17 +176,17 @@ async function handleApiAction(action, body, event) {
       const exists = file.data.find(
         (d) => safeText(d.code).toLowerCase() === code.toLowerCase()
       );
-      if (exists) throw new Error("این کد قبلاً ثبت شده");
+      if (exists) throw new Error("این کد قبلاً وجود دارد");
       const item = {
         id: "D_" + Date.now().toString(36),
         code,
-        type: safeText(body.type || "percent") === "amount" ? "amount" : "percent",
+        type: body.type === "amount" ? "amount" : "percent",
         value: safeNumber(body.value),
         active: body.active !== false,
         createdAt: nowISO()
       };
       file.data.push(item);
-      await writeJsonFile("data/discounts.json", file.data, "Add discount " + code, file.sha);
+      await writeJsonFile("data/discounts.json", file.data, "Add discount", file.sha);
       return item;
     }
 
@@ -216,81 +194,37 @@ async function handleApiAction(action, body, event) {
       const file = await readJsonFile("data/discounts.json", []);
       const id = body.id || body.discountId;
       const idx = file.data.findIndex(
-        (d) => String(d.id) === String(id) || safeText(d.code).toLowerCase() === safeText(id).toLowerCase()
+        (d) => d.id === id || d.code === id
       );
-      if (idx < 0) throw new Error("کد تخفیف پیدا نشد");
-      const prev = file.data[idx];
-      const changes = body.changes || body;
-      file.data[idx] = {
-        ...prev,
-        ...changes,
-        id: prev.id,
-        code: safeText(changes.code || prev.code) || prev.code,
-        updatedAt: nowISO()
-      };
+      if (idx === -1) throw new Error("کد تخفیف پیدا نشد");
+      file.data[idx] = { ...file.data[idx], ...(body.changes || body), id: file.data[idx].id };
       await writeJsonFile("data/discounts.json", file.data, "Update discount", file.sha);
       return file.data[idx];
     }
 
     case "discounts.delete": {
       const file = await readJsonFile("data/discounts.json", []);
-      const id = body.id || body.discountId || body.code;
-      const idx = file.data.findIndex(
-        (d) => String(d.id) === String(id) || safeText(d.code).toLowerCase() === safeText(id).toLowerCase()
-      );
-      if (idx < 0) throw new Error("کد تخفیف پیدا نشد");
-      const removed = file.data.splice(idx, 1)[0];
-      await writeJsonFile("data/discounts.json", file.data, "Delete discount", file.sha);
-      return removed;
-    }
-
-    case "discounts.validate": {
-      const file = await readJsonFile("data/discounts.json", []);
-      const code = safeText(body.code).toLowerCase();
-      return (
-        file.data.find(
-          (d) =>
-            safeText(d.code).toLowerCase() === code &&
-            d.active !== false
-        ) || null
-      );
+      const id = body.id || body.discountId;
+      const next = file.data.filter((d) => d.id !== id && d.code !== id);
+      await writeJsonFile("data/discounts.json", next, "Delete discount", file.sha);
+      return { ok: true };
     }
 
     case "settings.get": {
-      const file = await readJsonFile(
-        "data/settings.json",
-        JSON_DEFAULTS["data/settings.json"]
-      );
+      const file = await readJsonFile("data/settings.json", JSON_DEFAULTS["data/settings.json"] || {});
       return file.data;
     }
 
     case "settings.update": {
-      const file = await readJsonFile(
-        "data/settings.json",
-        JSON_DEFAULTS["data/settings.json"]
-      );
-
-      const settings = {
-        ...file.data,
-        ...(body.settings || body),
-        updatedAt: nowISO()
-      };
-
-      await writeJsonFile(
-        "data/settings.json",
-        settings,
-        "Update settings",
-        file.sha
-      );
-
-      return settings;
+      const file = await readJsonFile("data/settings.json", {});
+      const next = { ...file.data, ...(body.settings || body) };
+      await writeJsonFile("data/settings.json", next, "Update settings", file.sha);
+      return next;
     }
 
     case "banners.list": {
       const file = await readJsonFile("data/banners.json", []);
-      return (file.data || [])
-        .filter((b) => b && b.active !== false)
-        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      return (file.data || []).filter((b) => b && b.active !== false);
     }
 
     case "banners.all": {
@@ -299,64 +233,26 @@ async function handleApiAction(action, body, event) {
     }
 
     case "banners.save": {
-      const list = Array.isArray(body.banners)
-        ? body.banners
-        : Array.isArray(body.list)
-          ? body.list
-          : null;
-      if (!list) throw new Error("banners array required");
+      const list = Array.isArray(body.banners) ? body.banners : [];
       const file = await readJsonFile("data/banners.json", []);
-      await writeJsonFile(
-        "data/banners.json",
-        list,
-        "Update banners",
-        file.sha
-      );
+      await writeJsonFile("data/banners.json", list, "Save banners", file.sha);
       return list;
     }
 
     case "media.upload": {
-      const raw = safeText(body.base64 || body.content || body.data);
-      if (!raw) throw new Error("تصویر ارسال نشده");
-      const pure = raw.replace(/^data:[^;]+;base64,/, "");
-      let buf;
-      try {
-        buf = Buffer.from(pure, "base64");
-      } catch {
-        throw new Error("داده تصویر نامعتبر است");
-      }
-      if (!buf.length) throw new Error("فایل خالی است");
-      if (buf.length > 4.5 * 1024 * 1024) {
-        throw new Error("حجم تصویر بیش از حد مجاز است (حداکثر حدود ۴ مگابایت)");
-      }
-      const nameIn = safeText(body.filename || body.name || "upload.jpg").toLowerCase();
-      let ext = "jpg";
-      if (nameIn.endsWith(".png")) ext = "png";
-      else if (nameIn.endsWith(".webp")) ext = "webp";
-      else if (nameIn.endsWith(".gif")) ext = "gif";
-      else if (nameIn.endsWith(".jpeg") || nameIn.endsWith(".jpg")) ext = "jpg";
-      const mime = safeText(body.mime || body.type).toLowerCase();
-      if (mime.includes("png")) ext = "png";
-      if (mime.includes("webp")) ext = "webp";
-      if (mime.includes("gif")) ext = "gif";
-      const id =
-        "U" +
-        Date.now().toString(36) +
-        Math.random().toString(36).slice(2, 6);
-      const path = `images/${id}.${ext}`;
-      await writeBinaryFile(path, buf, `Upload ${path}`);
-      return {
-        path,
-        url: path,
-        size: buf.length
-      };
+      const base64 = body.base64 || body.content;
+      if (!base64) throw new Error("base64 required");
+      let filename = safeText(body.filename) || `img_${Date.now()}.jpg`;
+      filename = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+      if (!filename.includes(".")) filename += ".jpg";
+      const path = filename.startsWith("images/") ? filename : `images/${filename}`;
+      const buffer = Buffer.from(String(base64).replace(/^data:image\/\w+;base64,/, ""), "base64");
+      await writeBinaryFile(path, buffer, `Upload ${path}`);
+      return { path, url: path };
     }
 
-    case "pricing.calculate":
-      return calculatePricing(body);
-
     default:
-      throw new Error(`Unknown action: ${action}`);
+      throw new Error("Unknown action: " + action);
   }
 }
 
