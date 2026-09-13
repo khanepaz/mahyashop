@@ -1,35 +1,5 @@
 [
   {
-    "id": "P26090904564400",
-    "name": "من",
-    "category": "📱 دیجیتال",
-    "categoryId": "digital",
-    "description": "",
-    "image": "images/P26090904564400.jpg",
-    "images": [
-      "images/P26090904564400.jpg"
-    ],
-    "price": 0,
-    "compareAtPrice": 0,
-    "discountPercent": 0,
-    "discountAmount": 0,
-    "finalPrice": 0,
-    "currency": "IRR",
-    "variants": [],
-    "attributes": {},
-    "stock": 0,
-    "totalStock": 0,
-    "active": true,
-    "featured": false,
-    "tags": [],
-    "createdAt": "2026-09-09T04:56:46.037Z",
-    "updatedAt": "2026-09-13T09:03:23.831Z",
-    "badges": [],
-    "discountType": "none",
-    "discountValue": 0,
-    "discountLabel": "بدون تخفیف"
-  },
-  {
     "id": "P26090908165843",
     "name": "من زیبا",
     "description": "",
@@ -71,7 +41,7 @@
     "finalPrice": 70000,
     "currency": "IRR",
     "createdAt": "2026-09-09T08:16:58.029Z",
-    "updatedAt": "2026-09-13T09:03:23.831Z",
+    "updatedAt": "2026-09-13T09:04:21.285Z",
     "badges": [],
     "discountType": "none",
     "discountValue": 0,
@@ -102,7 +72,7 @@
     "currency": "IRR",
     "badges": [],
     "createdAt": "2026-09-09T10:21:12.019Z",
-    "updatedAt": "2026-09-13T09:03:23.831Z",
+    "updatedAt": "2026-09-13T09:04:21.285Z",
     "discountType": "none",
     "discountValue": 0,
     "discountLabel": "بدون تخفیف"
