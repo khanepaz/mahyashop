@@ -29,7 +29,8 @@ module.exports = {
       shopName: "MahyaShop",
       supportChat: ""
     },
-    "data/product_drafts.json": {}
+    "data/product_drafts.json": {},
+    "data/banners.json": []
   },
 
   // Order statuses (lifecycle)

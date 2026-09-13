@@ -1,0 +1,35 @@
+[
+  {
+    "id": "bn_welcome",
+    "title": "خرید هوشمند، ارسال سریع",
+    "subtitle": "محصولات منتخب را آنلاین سفارش دهید و پرداخت را در بله انجام دهید.",
+    "image": "",
+    "link": "#productsSection",
+    "buttonText": "مشاهده محصولات",
+    "gradient": "linear-gradient(120deg, rgba(15,20,40,.92), rgba(15,52,96,.85))",
+    "active": true,
+    "order": 1
+  },
+  {
+    "id": "bn_specials",
+    "title": "پیشنهادهای ویژه",
+    "subtitle": "تخفیف‌دارها و محصولات پرفروش همین حالا در دسترس شماست.",
+    "image": "",
+    "link": "#specialsSection",
+    "buttonText": "مشاهده ویژه",
+    "gradient": "linear-gradient(120deg, rgba(80,20,40,.9), rgba(160,30,50,.75))",
+    "active": true,
+    "order": 2
+  },
+  {
+    "id": "bn_cats",
+    "title": "دسته‌بندی‌های متنوع",
+    "subtitle": "پوشاک، دیجیتال، زیبایی و بیشتر — سریع پیدا کنید.",
+    "image": "",
+    "link": "#catsSection",
+    "buttonText": "دسته‌بندی‌ها",
+    "gradient": "linear-gradient(120deg, rgba(20,40,30,.9), rgba(30,90,70,.75))",
+    "active": true,
+    "order": 3
+  }
+]
