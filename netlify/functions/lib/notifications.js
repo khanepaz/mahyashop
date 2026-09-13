@@ -61,7 +61,7 @@ async function registerAdminChat(chatId) {
     await writeJsonFile(
       "data/settings.json",
       s,
-      `Register admin chat ${id}`,
+      "Register admin chat " + id,
       file.sha
     );
   } catch (e) {
@@ -93,8 +93,8 @@ async function notifyAdmins(text, replyMarkup = null) {
 function orderItemsLines(order) {
   return (order.items || [])
     .map((i) => {
-      const v = i.variantName ? ` (${escapeMd(i.variantName)})` : "";
-      return `• ${escapeMd(i.name)}${v} × ${i.quantity} = *${formatPrice(i.total)}*`;
+      const v = i.variantName ? " (" + escapeMd(i.variantName) + ")" : "";
+      return "• " + escapeMd(i.name) + v + " × " + i.quantity + " = *" + formatPrice(i.total) + "*";
     })
     .join("\n");
 }
@@ -102,28 +102,28 @@ function orderItemsLines(order) {
 function customerBlock(order) {
   const c = order.customer || {};
   const lines = [];
-  if (c.name) lines.push(`نام: ${escapeMd(c.name)}`);
-  if (c.phone) lines.push(`موبایل: ${escapeMd(c.phone)}`);
-  if (c.address) lines.push(`آدرس: ${escapeMd(c.address)}`);
-  if (order.note) lines.push(`توضیح: ${escapeMd(order.note)}`);
-  if (order.baleChatId) lines.push(`چت بله: \`${order.baleChatId}\`);
+  if (c.name) lines.push("نام: " + escapeMd(c.name));
+  if (c.phone) lines.push("موبایل: " + escapeMd(c.phone));
+  if (c.address) lines.push("آدرس: " + escapeMd(c.address));
+  if (order.note) lines.push("توضیح: " + escapeMd(order.note));
+  if (order.baleChatId) lines.push("چت بله: " + String(order.baleChatId));
   return lines.length ? lines.join("\n") : "—";
 }
 
 async function notifyNewOrder(order) {
   if (!order) return;
   const text =
-    `🛒 *سفارش جدید ثبت شد*\n\n` +
-    `کد: *${escapeMd(order.id)}*\n` +
-    `وضعیت: در انتظار پرداخت\n` +
-    `مبلغ: *${formatPrice(order.total)}*\n\n` +
-    `*اقلام:*\n${orderItemsLines(order)}\n\n` +
-    `*مشتری:*\n${customerBlock(order)}`;
+    "🛒 *سفارش جدید ثبت شد*\n\n" +
+    "کد: *" + escapeMd(order.id) + "*\n" +
+    "وضعیت: در انتظار پرداخت\n" +
+    "مبلغ: *" + formatPrice(order.total) + "*\n\n" +
+    "*اقلام:*\n" + orderItemsLines(order) + "\n\n" +
+    "*مشتری:*\n" + customerBlock(order);
 
   return notifyAdmins(
     text,
     inlineKeyboard([
-      [{ text: "📋 جزئیات سفارش", callback_data: `order:detail:${order.id}` }],
+      [{ text: "📋 جزئیات سفارش", callback_data: "order:detail:" + order.id }],
       [{ text: "🛒 همه سفارش‌ها", callback_data: "orders.list" }]
     ])
   );
@@ -140,22 +140,22 @@ async function notifyOrderPaid(order, paymentMeta = {}) {
     "—";
 
   const text =
-    `✅ *پرداخت موفق*\n\n` +
-    `کد سفارش: *${escapeMd(order.id)}*\n` +
-    `مبلغ: *${formatPrice(order.total)}*\n` +
-    `وضعیت: تأیید شده / پرداخت شده\n` +
-    `شناسه پرداخت: \`${escapeMd(String(charge))}\`\n\n` +
-    `*اقلام:*\n${orderItemsLines(order)}\n\n` +
-    `*مشتری:*\n${customerBlock(order)}`;
+    "✅ *پرداخت موفق*\n\n" +
+    "کد سفارش: *" + escapeMd(order.id) + "*\n" +
+    "مبلغ: *" + formatPrice(order.total) + "*\n" +
+    "وضعیت: تأیید شده / پرداخت شده\n" +
+    "شناسه پرداخت: " + escapeMd(String(charge)) + "\n\n" +
+    "*اقلام:*\n" + orderItemsLines(order) + "\n\n" +
+    "*مشتری:*\n" + customerBlock(order);
 
   return notifyAdmins(
     text,
     inlineKeyboard([
-      [{ text: "📋 مدیریت سفارش", callback_data: `order:detail:${order.id}` }],
+      [{ text: "📋 مدیریت سفارش", callback_data: "order:detail:" + order.id }],
       [
         {
           text: "📦 آماده‌سازی",
-          callback_data: `order:status:${order.id}:packing`
+          callback_data: "order:status:" + order.id + ":packing"
         }
       ]
     ])
