@@ -24,7 +24,7 @@ const {
   deleteBadge
 } = require("./badges");
 const { getOrdersFile, createOrder, updateOrderStatus } = require("./orders");
-const { readJsonFile, writeJsonFile } = require("./github");
+const { readJsonFile, writeJsonFile, writeBinaryFile } = require("./github");
 const { JSON_DEFAULTS } = require("./config");
 const { nowISO, safeText, safeNumber, checkAdminPassword, getAdminSecret, requireAdminApi } = require("./utils");
 const { calculatePricing } = require("./pricing");
@@ -38,7 +38,7 @@ async function handleApiAction(action, body, event) {
     "badges.create", "badges.update", "badges.delete",
     "orders.status.update",
     "discounts.create", "discounts.update", "discounts.delete",
-    "settings.update", "banners.save"
+    "settings.update", "banners.save", "media.upload"
   ]);
   if (writeActions.has(action)) {
     requireAdminApi(event);
@@ -313,6 +313,43 @@ async function handleApiAction(action, body, event) {
         file.sha
       );
       return list;
+    }
+
+    case "media.upload": {
+      const raw = safeText(body.base64 || body.content || body.data);
+      if (!raw) throw new Error("تصویر ارسال نشده");
+      const pure = raw.replace(/^data:[^;]+;base64,/, "");
+      let buf;
+      try {
+        buf = Buffer.from(pure, "base64");
+      } catch {
+        throw new Error("داده تصویر نامعتبر است");
+      }
+      if (!buf.length) throw new Error("فایل خالی است");
+      if (buf.length > 4.5 * 1024 * 1024) {
+        throw new Error("حجم تصویر بیش از حد مجاز است (حداکثر حدود ۴ مگابایت)");
+      }
+      const nameIn = safeText(body.filename || body.name || "upload.jpg").toLowerCase();
+      let ext = "jpg";
+      if (nameIn.endsWith(".png")) ext = "png";
+      else if (nameIn.endsWith(".webp")) ext = "webp";
+      else if (nameIn.endsWith(".gif")) ext = "gif";
+      else if (nameIn.endsWith(".jpeg") || nameIn.endsWith(".jpg")) ext = "jpg";
+      const mime = safeText(body.mime || body.type).toLowerCase();
+      if (mime.includes("png")) ext = "png";
+      if (mime.includes("webp")) ext = "webp";
+      if (mime.includes("gif")) ext = "gif";
+      const id =
+        "U" +
+        Date.now().toString(36) +
+        Math.random().toString(36).slice(2, 6);
+      const path = `images/${id}.${ext}`;
+      await writeBinaryFile(path, buf, `Upload ${path}`);
+      return {
+        path,
+        url: path,
+        size: buf.length
+      };
     }
 
     case "pricing.calculate":
