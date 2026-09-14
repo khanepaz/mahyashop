@@ -14,12 +14,12 @@
     "id": "bn_specials",
     "title": "پیشنهادهای ویژه",
     "subtitle": "تخفیف‌دارها و محصولات پرفروش همین حالا در دسترس شماست.",
-    "image": "",
+    "image": "images/IMG_20260915_081926.jpg",
+    "gradient": "linear-gradient(120deg, rgba(80,20,40,.9), rgba(160,30,50,.75))",
     "link": "#specialsSection",
     "buttonText": "مشاهده ویژه",
-    "gradient": "linear-gradient(120deg, rgba(80,20,40,.9), rgba(160,30,50,.75))",
-    "active": true,
-    "order": 2
+    "order": 2,
+    "active": true
   },
   {
     "id": "bn_cats",
