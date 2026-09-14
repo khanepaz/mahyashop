@@ -117,11 +117,12 @@
     "customer": {
       "name": "علی کرمی",
       "phone": "95862",
-      "address": "فر"
+      "address": "فر",
+      "baleChatId": 1918832223
     },
     "note": "",
-    "baleChatId": null,
+    "baleChatId": 1918832223,
     "createdAt": "2026-09-14T11:00:20.517Z",
-    "updatedAt": "2026-09-14T11:00:20.517Z"
+    "updatedAt": "2026-09-14T11:00:41.871Z"
   }
 ]
