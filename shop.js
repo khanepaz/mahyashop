@@ -29,12 +29,9 @@ function fillCustomerForm() {
   if (c.note) document.getElementById("customerNote").value = c.note;
 }
 
-/** مسیر نسبی تصاویر را نسبت به پوشهٔ صفحه حل می‌کند (گیت‌هاب‌پیجز + نتلیفای) */
 function pageDir() {
   var path = location.pathname || "/";
-  if (/\.html?$/i.test(path)) {
-    return path.replace(/\/[^/]*$/, "/");
-  }
+  if (/\.html?$/i.test(path)) return path.replace(/\/[^/]*$/, "/");
   if (!path.endsWith("/")) return path + "/";
   return path;
 }
@@ -44,11 +41,8 @@ function assetUrl(path) {
   if (!s) return "";
   if (/^(https?:|data:|blob:)/i.test(s)) return s;
   s = s.replace(/^\.\//, "").replace(/^\/+/, "");
-  try {
-    return new URL(s, location.origin + pageDir()).href;
-  } catch (e) {
-    return pageDir() + s;
-  }
+  try { return new URL(s, location.origin + pageDir()).href; }
+  catch (e) { return pageDir() + s; }
 }
 
 function escapeHtml(s) {
@@ -166,9 +160,12 @@ async function loadCategories() {
   try {
     var res = await fetchWithTimeout(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "categories.list" }), cache: "no-store" }, API_TIMEOUT_MS);
     var data = await res.json();
-    if (data && data.ok !== false && Array.isArray(data.result)) {
-      categories = data.result;
-      if (categories.length) return;
+    var list = null;
+    if (data && Array.isArray(data.result)) list = data.result;
+    else if (Array.isArray(data)) list = data;
+    if (list && list.length) {
+      categories = list;
+      return;
     }
   } catch (e) {}
   await loadCategoriesFromFallback();
@@ -252,12 +249,14 @@ function renderSpecials() {
 }
 
 function renderCategories() {
-  var strip = document.getElementById("catStrip");
-  var grid = document.getElementById("catsGrid");
+  var strip = document.getElementById("categoryStrip");
+  var grid = document.getElementById("categoryCards");
+  var filterSel = document.getElementById("filterCategory");
+  var activeCats = categories.filter(function (c) { return c && c.active !== false; });
+
   var pills = '<button type="button" class="cat-pill' + (currentCategory === "all" ? " active" : "") + '" data-cat="all">همه</button>';
-  categories.forEach(function (c) {
-    if (c.active === false) return;
-    pills += '<button type="button" class="cat-pill' + (String(currentCategory) === String(c.id) ? " active" : "") + '" data-cat="' + c.id + '">' +
+  activeCats.forEach(function (c) {
+    pills += '<button type="button" class="cat-pill' + (String(currentCategory) === String(c.id) ? " active" : "") + '" data-cat="' + escapeHtml(String(c.id)) + '">' +
       (c.icon || "") + " " + escapeHtml(c.name) + '</button>';
   });
   if (strip) {
@@ -265,6 +264,7 @@ function renderCategories() {
     strip.querySelectorAll("[data-cat]").forEach(function (b) {
       b.onclick = function () {
         currentCategory = b.getAttribute("data-cat");
+        if (filterSel) filterSel.value = currentCategory;
         renderCategories();
         renderProducts();
         var sec = document.getElementById("productsSection");
@@ -273,19 +273,28 @@ function renderCategories() {
     });
   }
   if (grid) {
-    grid.innerHTML = categories.filter(function (c) { return c.active !== false; }).map(function (c) {
-      return '<div class="col-4 col-md-3 col-lg-2"><div class="cat-card" data-cat="' + c.id + '">' +
+    grid.innerHTML = activeCats.map(function (c) {
+      return '<div class="col-4 col-md-3 col-lg-2"><div class="cat-card" data-cat="' + escapeHtml(String(c.id)) + '">' +
         '<div class="ico">' + (c.icon || "📦") + '</div><div class="name">' + escapeHtml(c.name) + '</div></div></div>';
     }).join("");
     grid.querySelectorAll("[data-cat]").forEach(function (el) {
       el.onclick = function () {
         currentCategory = el.getAttribute("data-cat");
+        if (filterSel) filterSel.value = currentCategory;
         renderCategories();
         renderProducts();
         var sec = document.getElementById("productsSection");
         if (sec) sec.scrollIntoView({ behavior: "smooth" });
       };
     });
+  }
+  if (filterSel) {
+    var prev = filterSel.value || currentCategory || "all";
+    filterSel.innerHTML = '<option value="all">همه</option>' + activeCats.map(function (c) {
+      return '<option value="' + escapeHtml(String(c.id)) + '">' + escapeHtml((c.icon || "") + " " + c.name) + '</option>';
+    }).join("");
+    filterSel.value = prev;
+    if (!filterSel.value) filterSel.value = "all";
   }
 }
 
@@ -295,21 +304,26 @@ function openProduct(id) {
   selectedProduct = p;
   selectedAttributes = {};
   selectedQuantity = 1;
-  var body = document.getElementById("productModalBody");
+  var body = document.getElementById("productBox");
   if (!body) return;
   body.innerHTML =
+    '<div class="modal-header"><h5 class="modal-title">' + escapeHtml(p.name) + '</h5>' +
+    '<button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>' +
+    '<div class="modal-body">' +
     (p.image ? '<img class="modal-product-img" src="' + p.image + '" alt="" />' : '') +
-    '<h5 class="mt-3">' + escapeHtml(p.name) + '</h5>' +
-    '<div class="text-muted small mb-2">' + escapeHtml(p.category || '') + '</div>' +
+    '<div class="text-muted small mb-2 mt-2">' + escapeHtml(p.category || '') + '</div>' +
     '<div class="mb-2"><strong>' + money(p.finalPrice) + '</strong>' +
     (p.compareAtPrice > p.finalPrice ? ' <span class="old-price">' + money(p.compareAtPrice) + '</span>' : '') +
     '</div>' +
     (p.description ? '<p class="small">' + escapeHtml(p.description) + '</p>' : '') +
-    '<div class="d-flex align-items-center gap-2 mt-3">' +
+    '<div class="d-flex align-items-center gap-2 mt-3 flex-wrap">' +
     '<button type="button" class="btn btn-outline-secondary btn-sm" id="qtyMinus">−</button>' +
     '<span id="qtyVal">1</span>' +
     '<button type="button" class="btn btn-outline-secondary btn-sm" id="qtyPlus">+</button>' +
-    '<button type="button" class="btn btn-dk flex-grow-1" id="addToCartBtn">افزودن به سبد</button></div>';
+    '</div></div>' +
+    '<div class="modal-footer">' +
+    '<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">بستن</button>' +
+    '<button type="button" class="btn btn-dk" id="addToCartBtn">افزودن به سبد</button></div>';
   document.getElementById("qtyMinus").onclick = function () {
     selectedQuantity = Math.max(1, selectedQuantity - 1);
     document.getElementById("qtyVal").textContent = selectedQuantity;
@@ -332,7 +346,16 @@ function addToCart(product, variant, qty) {
   var key = product.id + "|" + ((variant && variant.id) || "");
   var found = cart.find(function (c) { return c.key === key; });
   if (found) found.quantity += qty;
-  else cart.push({ key: key, productId: product.id, variantId: (variant && variant.id) || null, name: product.name, variantName: (variant && variant.name) || '', image: product.image, unitPrice: (variant && variant.price) || product.finalPrice, quantity: qty });
+  else cart.push({
+    key: key,
+    productId: product.id,
+    variantId: (variant && variant.id) || null,
+    name: product.name,
+    variantName: (variant && variant.name) || "",
+    image: product.image,
+    unitPrice: (variant && variant.price) || product.finalPrice,
+    quantity: qty
+  });
   saveCart();
   renderCart();
   toast("به سبد اضافه شد", "ok");
@@ -342,13 +365,13 @@ function cartCount() { return cart.reduce(function (s, i) { return s + i.quantit
 function cartTotal() { return cart.reduce(function (s, i) { return s + i.unitPrice * i.quantity; }, 0); }
 
 function renderCart() {
-  var badge = document.getElementById("cartBadge");
+  var badge = document.getElementById("cartCount");
   if (badge) {
     var n = cartCount();
     badge.textContent = n;
     badge.classList.toggle("d-none", n === 0);
   }
-  var list = document.getElementById("cartList");
+  var list = document.getElementById("cartItems");
   var totalEl = document.getElementById("cartTotal");
   if (totalEl) totalEl.textContent = money(cartTotal());
   if (!list) return;
@@ -357,7 +380,7 @@ function renderCart() {
     return;
   }
   list.innerHTML = cart.map(function (item, idx) {
-    return '<div class="c-item"><img src="' + (item.image || '') + '" alt="" loading="lazy" /><div><div class="c-title">' + escapeHtml(item.name) + '</div>' +
+    return '<div class="c-item"><img src="' + (item.image || "") + '" alt="" loading="lazy" /><div><div class="c-title">' + escapeHtml(item.name) + '</div>' +
       (item.variantName ? '<div class="c-var">' + escapeHtml(item.variantName) + '</div>' : '') +
       '<div class="c-price">' + money(item.unitPrice * item.quantity) + '</div>' +
       '<div class="c-qty"><button type="button" data-dec="' + idx + '">−</button><span>' + item.quantity +
@@ -365,18 +388,27 @@ function renderCart() {
       '<button type="button" class="btn btn-sm text-danger" data-rm="' + idx + '"><i class="bi bi-trash"></i></button></div>';
   }).join("");
   list.querySelectorAll("[data-inc]").forEach(function (b) {
-    b.onclick = function () { cart[Number(b.getAttribute("data-inc"))].quantity += 1; saveCart(); renderCart(); };
+    b.onclick = function () {
+      cart[Number(b.getAttribute("data-inc"))].quantity += 1;
+      saveCart();
+      renderCart();
+    };
   });
   list.querySelectorAll("[data-dec]").forEach(function (b) {
     b.onclick = function () {
       var i = Number(b.getAttribute("data-dec"));
       cart[i].quantity -= 1;
       if (cart[i].quantity <= 0) cart.splice(i, 1);
-      saveCart(); renderCart();
+      saveCart();
+      renderCart();
     };
   });
   list.querySelectorAll("[data-rm]").forEach(function (b) {
-    b.onclick = function () { cart.splice(Number(b.getAttribute("data-rm")), 1); saveCart(); renderCart(); };
+    b.onclick = function () {
+      cart.splice(Number(b.getAttribute("data-rm")), 1);
+      saveCart();
+      renderCart();
+    };
   });
 }
 
@@ -389,9 +421,17 @@ async function submitOrder() {
   if (!cart.length) { toast("سبد خالی است", "err"); return; }
   saveCustomer({ name: name, phone: phone, address: address, note: note });
   var items = cart.map(function (i) {
-    return { productId: i.productId, variantId: i.variantId, name: i.name, variantName: i.variantName, unitPrice: i.unitPrice, quantity: i.quantity, image: i.image };
+    return {
+      productId: i.productId,
+      variantId: i.variantId,
+      name: i.name,
+      variantName: i.variantName,
+      unitPrice: i.unitPrice,
+      quantity: i.quantity,
+      image: i.image
+    };
   });
-  var btn = document.getElementById("confirmOrderBtn");
+  var btn = document.getElementById("submitOrderBtn");
   if (btn) btn.disabled = true;
   try {
     var res = await fetchWithTimeout(API_URL, {
@@ -414,10 +454,10 @@ async function submitOrder() {
     saveCart();
     renderCart();
     checkoutModal.hide();
-    var oid = document.getElementById("successOrderId");
-    if (oid) oid.textContent = lastOrderId;
+    var oid = document.getElementById("successMsg");
+    if (oid) oid.textContent = "کد سفارش: " + (lastOrderId || "—") + " — برای پرداخت، ربات بله را باز کنید.";
     successModal.show();
-    var pay = document.getElementById("goBalePay");
+    var pay = document.getElementById("baleOpenBtn");
     if (pay) {
       pay.href = BALE_BOT_URL + (lastOrderId ? "?start=" + encodeURIComponent(lastOrderId) : "");
     }
@@ -432,7 +472,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   productModal = new bootstrap.Modal(document.getElementById("productModal"));
   checkoutModal = new bootstrap.Modal(document.getElementById("checkoutModal"));
   successModal = new bootstrap.Modal(document.getElementById("successModal"));
-  var cartEl = document.getElementById("cartOffcanvas");
+  var cartEl = document.getElementById("cartDrawer");
   if (cartEl) cartOffcanvas = new bootstrap.Offcanvas(cartEl);
 
   fillCustomerForm();
@@ -454,24 +494,91 @@ document.addEventListener("DOMContentLoaded", async function () {
     priceMax = e.target.value;
     renderProducts();
   });
-  document.getElementById("stockFilter") && document.getElementById("stockFilter").addEventListener("change", function (e) {
+  document.getElementById("filterStock") && document.getElementById("filterStock").addEventListener("change", function (e) {
     stockFilter = e.target.value;
     renderProducts();
   });
-  document.getElementById("openCheckout") && (document.getElementById("openCheckout").onclick = function () {
-    if (!cart.length) { toast("سبد خالی است", "err"); return; }
-    fillCustomerForm();
-    checkoutModal.show();
-  });
-  document.getElementById("confirmOrderBtn") && (document.getElementById("confirmOrderBtn").onclick = submitOrder);
+
+  var checkoutBtn = document.getElementById("checkoutBtn");
+  if (checkoutBtn) {
+    checkoutBtn.onclick = function () {
+      if (!cart.length) { toast("سبد خالی است", "err"); return; }
+      fillCustomerForm();
+      var cnt = document.getElementById("checkoutItemsCount");
+      var tot = document.getElementById("checkoutTotal");
+      if (cnt) cnt.textContent = String(cartCount());
+      if (tot) tot.textContent = money(cartTotal());
+      checkoutModal.show();
+    };
+  }
+
+  var checkoutForm = document.getElementById("checkoutForm");
+  if (checkoutForm) {
+    checkoutForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      submitOrder();
+    });
+  } else {
+    var sob = document.getElementById("submitOrderBtn");
+    if (sob) sob.onclick = submitOrder;
+  }
+
+  var filterCat = document.getElementById("filterCategory");
+  if (filterCat) {
+    filterCat.addEventListener("change", function () {
+      currentCategory = filterCat.value || "all";
+      renderCategories();
+      renderProducts();
+    });
+  }
+
+  var applyBtn = document.getElementById("applyFiltersBtn");
+  if (applyBtn) {
+    applyBtn.onclick = function () {
+      var fs = document.getElementById("filterStock");
+      if (fs) stockFilter = fs.value;
+      var pmin = document.getElementById("priceMin");
+      var pmax = document.getElementById("priceMax");
+      priceMin = pmin ? pmin.value : null;
+      priceMax = pmax ? pmax.value : null;
+      if (filterCat) currentCategory = filterCat.value || "all";
+      renderProducts();
+    };
+  }
+  var resetBtn = document.getElementById("resetFiltersBtn");
+  if (resetBtn) {
+    resetBtn.onclick = function () {
+      currentCategory = "all";
+      currentSearch = "";
+      priceMin = null;
+      priceMax = null;
+      stockFilter = "all";
+      currentSort = "newest";
+      var si = document.getElementById("searchInput");
+      if (si) si.value = "";
+      var pmin = document.getElementById("priceMin");
+      var pmax = document.getElementById("priceMax");
+      if (pmin) pmin.value = "";
+      if (pmax) pmax.value = "";
+      var fs = document.getElementById("filterStock");
+      if (fs) fs.value = "all";
+      var ss = document.getElementById("sortSelect");
+      if (ss) ss.value = "newest";
+      if (filterCat) filterCat.value = "all";
+      renderCategories();
+      renderProducts();
+    };
+  }
 
   try {
     await Promise.all([loadProducts(), loadCategories(), loadBanners()]);
   } catch (e) {
     console.warn(e);
   }
+  if (!categories.length) await loadCategoriesFromFallback();
   renderHero();
   renderCategories();
   renderSpecials();
   renderProducts();
+  renderCart();
 });
