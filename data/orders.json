@@ -112,7 +112,7 @@
     "discountCode": null,
     "shipping": 0,
     "total": 285000,
-    "status": "pending",
+    "status": "confirmed",
     "paymentStatus": "unpaid",
     "customer": {
       "name": "علی کرمی",
@@ -123,6 +123,6 @@
     "note": "",
     "baleChatId": 1918832223,
     "createdAt": "2026-09-14T11:00:20.517Z",
-    "updatedAt": "2026-09-14T11:00:41.871Z"
+    "updatedAt": "2026-09-14T11:02:02.246Z"
   }
 ]
