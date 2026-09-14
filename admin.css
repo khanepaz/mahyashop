@@ -30,7 +30,6 @@ body.admin-body {
   overflow-x: hidden;
 }
 
-/* ---------- Login ---------- */
 .login-wrap {
   min-height: 100vh;
   min-height: 100dvh;
@@ -72,7 +71,6 @@ body.admin-body {
   flex-shrink: 0;
 }
 
-/* ---------- Shell ---------- */
 .admin-shell {
   display: flex;
   min-height: 100vh;
@@ -80,7 +78,6 @@ body.admin-body {
   position: relative;
 }
 
-/* سایدبار: همیشه از سمت راست (RTL) */
 .admin-sidebar,
 .admin-aside {
   width: var(--adm-sidebar);
@@ -193,7 +190,6 @@ body.admin-body {
   line-height: 1;
 }
 
-/* ---------- Cards / tables ---------- */
 .stat-card {
   background: var(--adm-card);
   border-radius: var(--adm-radius);
@@ -309,7 +305,6 @@ body.admin-body {
   object-fit: cover;
 }
 
-/* ---------- Toast ---------- */
 .toast-adm {
   position: fixed;
   left: 50%;
@@ -336,7 +331,6 @@ body.admin-body {
 .toast-adm.err { background: #b91c1c; }
 .toast-adm.ok { background: #15803d; }
 
-/* ---------- Backdrop ---------- */
 .sidebar-backdrop {
   display: none;
   position: fixed;
@@ -352,35 +346,25 @@ body.admin-body {
   opacity: 1;
 }
 
-/* ---------- Desktop: sidebar always visible on the right ---------- */
 @media (min-width: 992px) {
   .admin-sidebar,
   .admin-aside {
     transform: none !important;
     visibility: visible !important;
   }
-
-  .sidebar-backdrop {
-    display: none !important;
-  }
-
-  #menuToggle {
-    display: none !important;
-  }
+  .sidebar-backdrop { display: none !important; }
+  #menuToggle { display: none !important; }
 }
 
-/* ---------- Tablet / Mobile: drawer from the RIGHT ---------- */
 @media (max-width: 991.98px) {
   .admin-sidebar,
   .admin-aside {
     width: min(var(--adm-sidebar), 88vw);
-    /* پنهان: خارج از صفحه به سمت راست */
     transform: translateX(105%);
     visibility: hidden;
     pointer-events: none;
     box-shadow: none;
   }
-
   .admin-sidebar.open,
   .admin-aside.open {
     transform: translateX(0);
@@ -388,14 +372,12 @@ body.admin-body {
     pointer-events: auto;
     box-shadow: -12px 0 40px rgba(0, 0, 0, 0.35);
   }
-
   .admin-main {
     margin-right: 0 !important;
     margin-left: 0 !important;
     width: 100%;
     padding: 0.75rem 0.75rem 2rem;
   }
-
   .admin-topbar {
     position: sticky;
     top: 0;
@@ -403,24 +385,13 @@ body.admin-body {
     border-radius: 12px;
     padding: 0.65rem 0.75rem;
   }
-
   body.menu-open {
     overflow: hidden;
     touch-action: none;
   }
-
-  .stat-card .value {
-    font-size: 1.25rem;
-  }
-
-  .panel-card .panel-body {
-    padding: 0.75rem;
-  }
-
-  .table-adm {
-    font-size: 0.85rem;
-  }
-
+  .stat-card .value { font-size: 1.25rem; }
+  .panel-card .panel-body { padding: 0.75rem; }
+  .table-adm { font-size: 0.85rem; }
   .admin-sidebar .nav-link,
   .admin-aside .nav-link {
     font-size: 1.05rem;
@@ -429,132 +400,95 @@ body.admin-body {
   }
 }
 
-/* ---------- Extra small phones ---------- */
 @media (max-width: 575.98px) {
-  .admin-main {
-    padding: 0.5rem 0.5rem 2rem;
-  }
-
-  .admin-topbar {
-    gap: 0.5rem;
-  }
-
-  #pageTitle {
-    font-size: 1rem;
-  }
-
-  #pageSub {
-    font-size: 0.75rem;
-  }
-
-  .btn-sm {
-    padding: 0.35rem 0.55rem;
-  }
+  .admin-main { padding: 0.5rem 0.5rem 2rem; }
+  .admin-topbar { gap: 0.5rem; }
+  #pageTitle { font-size: 1rem; }
+  #pageSub { font-size: 0.75rem; }
 }
 
-/* =========================================================
-   Modals — دسکتاپ و موبایل: کل محتوا دیده شود + اسکرول
-   ========================================================= */
+/* Modals */
 .modal {
   padding: 0 !important;
+  z-index: 1060;
 }
-
+.modal-backdrop { z-index: 1050; }
 .modal-dialog {
-  margin: 0.75rem auto;
-  max-width: min(800px, calc(100vw - 1.5rem));
+  margin: 0.5rem auto;
+  max-width: min(800px, calc(100% - 1rem));
+  max-height: calc(100dvh - 1rem);
+  display: flex;
+  align-items: center;
+  min-height: 0;
 }
-
 .modal-dialog.modal-lg {
-  max-width: min(800px, calc(100vw - 1.5rem));
+  max-width: min(800px, calc(100% - 1rem));
 }
-
+.modal-dialog-scrollable {
+  height: auto !important;
+  max-height: calc(100dvh - 1rem) !important;
+}
 .modal-content {
   border-radius: 16px;
   border: none;
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
-  max-height: calc(100vh - 1.5rem);
-  max-height: calc(100dvh - 1.5rem);
-  display: flex;
-  flex-direction: column;
+  width: 100%;
+  max-height: calc(100dvh - 1rem);
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden;
 }
-
+.modal-dialog-scrollable .modal-content {
+  max-height: calc(100dvh - 1rem) !important;
+  height: auto !important;
+}
 .modal-header {
-  flex-shrink: 0;
-  padding: 1rem 1.15rem;
+  flex: 0 0 auto;
+  padding: 0.9rem 1rem;
   border-bottom: 1px solid #eef2f7;
 }
-
 .modal-footer {
-  flex-shrink: 0;
-  padding: 0.85rem 1.15rem;
-  padding-bottom: calc(0.85rem + var(--adm-safe-bottom));
+  flex: 0 0 auto;
+  padding: 0.75rem 1rem;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid #eef2f7;
   gap: 0.5rem;
   flex-wrap: wrap;
+  background: #fff;
 }
-
 .modal-body {
-  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0 !important;
+  overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 1rem 1.15rem;
-  flex: 1 1 auto;
-  min-height: 0;
+  padding: 1rem;
 }
-
-.modal-dialog-scrollable {
-  height: calc(100vh - 1.5rem);
-  height: calc(100dvh - 1.5rem);
-  max-height: calc(100vh - 1.5rem);
-  max-height: calc(100dvh - 1.5rem);
-}
-
-.modal-dialog-scrollable .modal-content {
-  max-height: 100%;
-  height: 100%;
-}
-
 .modal-dialog-scrollable .modal-body {
-  overflow-y: auto;
+  overflow-y: auto !important;
 }
-
 @media (max-width: 575.98px) {
   .modal-dialog,
-  .modal-dialog.modal-lg {
-    margin: 0.35rem;
-    max-width: calc(100vw - 0.7rem);
+  .modal-dialog.modal-lg,
+  .modal-dialog-scrollable {
+    margin: 0.35rem auto !important;
+    max-width: calc(100% - 0.7rem) !important;
+    max-height: calc(100dvh - 0.7rem) !important;
+    align-items: flex-start;
   }
-
-  .modal-content {
-    max-height: calc(100vh - 0.7rem);
-    max-height: calc(100dvh - 0.7rem);
+  .modal-content,
+  .modal-dialog-scrollable .modal-content {
+    max-height: calc(100dvh - 0.7rem) !important;
     border-radius: 14px;
   }
-
-  .modal-dialog-scrollable {
-    height: calc(100vh - 0.7rem);
-    height: calc(100dvh - 0.7rem);
-    max-height: calc(100vh - 0.7rem);
-    max-height: calc(100dvh - 0.7rem);
-  }
-
   .modal-header,
   .modal-body,
   .modal-footer {
-    padding-left: 0.9rem;
-    padding-right: 0.9rem;
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
   }
-
   .modal-footer .btn {
     flex: 1 1 auto;
-    min-width: 40%;
+    min-width: 42%;
   }
-}
-
-.modal {
-  z-index: 1060;
-}
-
-.modal-backdrop {
-  z-index: 1050;
 }
